@@ -4,65 +4,65 @@
 package postgres
 
 import (
-	"bytes"
-	"context"
+	//"bytes"
+	//"context"
 	"database/sql"
 	"fmt"
-	"math"
-	"os"
+	//"math"
+	//"os"
 	"time"
 
-	"github.com/algorand/go-algorand-sdk/crypto"
-	"github.com/algorand/go-algorand-sdk/encoding/msgpack"
-	sdk_types "github.com/algorand/go-algorand-sdk/types"
-
-	"github.com/algorand/indexer/accounting"
+	//"github.com/algorand/indexer/accounting"
 	"github.com/algorand/indexer/api/generated/v2"
-	"github.com/algorand/indexer/idb"
 	"github.com/algorand/indexer/idb/migration"
 	"github.com/algorand/indexer/idb/postgres/internal/encoding"
-	"github.com/algorand/indexer/types"
 )
 
 // rewardsMigrationIndex is the index of m7RewardsAndDatesPart2.
 const rewardsMigrationIndex = 7
 
+const txidMigrationErrMsg = "ERROR migrating txns for txid, stopped, will retry on next indexer startup"
+
 func init() {
 	migrations = []migrationStruct{
-		// function, blocking, description
-		{m0fixupTxid, false, "Recompute the txid with corrected algorithm."},
-		{m1fixupBlockTime, true, "Adjust block time to UTC timezone."},
-		{m2apps, true, "Update DB Schema for Algorand application support."},
-		{m3acfgFix, false, "Recompute asset configurations with corrected merge function."},
+		/*
+			// function, blocking, description
+			{m0fixupTxid, false, "Recompute the txid with corrected algorithm."},
+			{m1fixupBlockTime, true, "Adjust block time to UTC timezone."},
+			{m2apps, true, "Update DB Schema for Algorand application support."},
+			{m3acfgFix, false, "Recompute asset configurations with corrected merge function."},
 
-		// 2.2.2 hotfix
-		{m4accountIndices, true, "Add indices to make sure account lookups remain fast when there are a lot of apps or assets."},
+			// 2.2.2 hotfix
+			{m4accountIndices, true, "Add indices to make sure account lookups remain fast when there are a lot of apps or assets."},
 
-		// Migrations for 2.3.1 release
-		{m5MarkTxnJSONSplit, true, "record round at which txn json recording changes, for future migration to fixup prior records"},
-		{m6RewardsAndDatesPart1, true, "Update DB Schema for cumulative account reward support and creation dates."},
-		{m7RewardsAndDatesPart2, false, "Compute cumulative account rewards for all accounts."},
+			// Migrations for 2.3.1 release
+			{m5MarkTxnJSONSplit, true, "record round at which txn json recording changes, for future migration to fixup prior records"},
+			{m6RewardsAndDatesPart1, true, "Update DB Schema for cumulative account reward support and creation dates."},
+			{m7RewardsAndDatesPart2, false, "Compute cumulative account rewards for all accounts."},
 
-		// Migrations for 2.3.2 release
-		{m8StaleClosedAccounts, false, "clear some stale data from closed accounts"},
-		{m9TxnJSONEncoding, false, "some txn JSON encodings need app keys base64 encoded"},
-		{m10SpecialAccountCleanup, false, "The initial m7 implementation would miss special accounts."},
-		{m11AssetHoldingFrozen, false, "Fix asset holding freeze states."},
+			// Migrations for 2.3.2 release
+			{m8StaleClosedAccounts, false, "clear some stale data from closed accounts"},
+			{m9TxnJSONEncoding, false, "some txn JSON encodings need app keys base64 encoded"},
+			{m10SpecialAccountCleanup, false, "The initial m7 implementation would miss special accounts."},
+			{m11AssetHoldingFrozen, false, "Fix asset holding freeze states."},
 
-		// Migrations for a next release
-		{FixFreezeLookupMigration, false, "Fix search by asset freeze address."},
-		{ClearAccountDataMigration, false, "clear account data for accounts that have been closed"},
-		{MakeDeletedNotNullMigration, false, "make all \"deleted\" columns NOT NULL"},
+			// Migrations for a next release
+			{FixFreezeLookupMigration, false, "Fix search by asset freeze address."},
+			{ClearAccountDataMigration, false, "clear account data for accounts that have been closed"},
+			{MakeDeletedNotNullMigration, true, "make all \"deleted\" columns NOT NULL"},
+		*/
 	}
 
-	// Verify ensure the constant is pointing to the right index
-	var m7Ptr postgresMigrationFunc = m7RewardsAndDatesPart2
-	a2 := fmt.Sprintf("%v", migrations[rewardsMigrationIndex].migrate)
-	a1 := fmt.Sprintf("%v", m7Ptr)
-	if a1 != a2 {
-		fmt.Println("Bad constant in postgres_migrations.go")
-		os.Exit(1)
-	}
+	/*
+		// Verify ensure the constant is pointing to the right index
+		var m7Ptr postgresMigrationFunc = m7RewardsAndDatesPart2
+		a2 := fmt.Sprintf("%v", migrations[rewardsMigrationIndex].migrate)
+		a1 := fmt.Sprintf("%v", m7Ptr)
+		if a1 != a2 {
+			fmt.Println("Bad constant in postgres_migrations.go")
+			os.Exit(1)
+		}
+	*/
 }
 
 // MigrationState is metadata used by the postgres migrations.
@@ -247,6 +247,23 @@ func (db *IndexerDb) processAccount(account *generated.Account) {
 		account.Rewards = 0
 	}
 }
+
+/*
+func m0YieldTxns(ctx context.Context, db *IndexerDb, firstRound uint64) <-chan idb.TxnRow {
+	results := make(chan idb.TxnRow, 1)
+	rows, err := db.db.QueryContext(ctx, yieldTxnQuery, int64(firstRound)-1)
+	if err != nil {
+		results <- idb.TxnRow{Error: err}
+		close(results)
+		return results
+	}
+	go func() {
+		db.yieldTxnsThread(ctx, rows, results)
+		close(results)
+	}()
+	return results
+}
+
 
 func m0fixupTxid(db *IndexerDb, state *MigrationState) error {
 	mtxid := &txidFiuxpMigrationContext{db: db, state: state}
@@ -1193,8 +1210,6 @@ func sqlMigration(db *IndexerDb, state *MigrationState, sqlLines []string) error
 	*state = nextState
 	return nil
 }
-
-const txidMigrationErrMsg = "ERROR migrating txns for txid, stopped, will retry on next indexer startup"
 
 type migrationContext struct {
 	db      *IndexerDb
@@ -2222,3 +2237,4 @@ func MakeDeletedNotNullMigration(db *IndexerDb, state *MigrationState) error {
 	}
 	return sqlMigration(db, state, queries)
 }
+*/
