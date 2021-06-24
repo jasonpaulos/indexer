@@ -2404,7 +2404,8 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "(empty)"
           }
         },
         "tags": [
@@ -2980,7 +2981,8 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "(empty)"
           }
         },
         "tags": [
@@ -3033,7 +3035,8 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "(empty)"
           },
           "500": {
             "content": {
@@ -3042,7 +3045,8 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "(empty)"
           }
         },
         "tags": [

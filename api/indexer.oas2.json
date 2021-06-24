@@ -341,7 +341,8 @@
           "404": {
             "schema": {
               "$ref": "#/definitions/ErrorResponse"
-            }
+            },
+            "description": "(empty)"
           }
         }
       }
@@ -524,12 +525,14 @@
           "404": {
             "schema": {
               "$ref": "#/definitions/ErrorResponse"
-            }
+            },
+            "description": "(empty)"
           },
           "500": {
             "schema": {
               "$ref": "#/definitions/ErrorResponse"
-            }
+            },
+            "description": "(empty)"
           }
         }
       }
@@ -613,7 +616,8 @@
           "500": {
             "schema": {
               "$ref": "#/definitions/ErrorResponse"
-            }
+            },
+            "description": "(empty)"
           }
         }
       }
