@@ -1,3 +1,12 @@
+directive @specifiedBy(url: String!) on SCALAR
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
+
+scalar Uint64
+
 type Query {
   """
   Lookup block.
@@ -6,7 +15,7 @@ type Query {
   """
   block(
     """Round number"""
-    roundNumber: Int!
+    roundNumber: Uint64!
   ): Block
 
   """
@@ -21,7 +30,7 @@ type Query {
   
   Equivalent to GET /v2/accounts/{account-id}
   """
-  v2Account(
+  account(
     """account string"""
     accountId: String!
 
@@ -31,15 +40,15 @@ type Query {
     includeAll: Boolean
 
     """Include results for the specified round."""
-    round: Int
-  ): V2Account
+    round: Uint64
+  ): AccountResponse
 
   """
   Lookup account transactions.
   
   Equivalent to GET /v2/accounts/{account-id}/transactions
   """
-  v2AccountTransactions(
+  accountTransactions(
     """account string"""
     accountId: String!
 
@@ -49,7 +58,7 @@ type Query {
     afterTime: String
 
     """Asset ID"""
-    assetId: Int
+    assetId: Uint64
 
     """
     Include results before the given time. Must be an RFC 3339 formatted string.
@@ -59,21 +68,21 @@ type Query {
     """
     Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
     """
-    currencyGreaterThan: Int
+    currencyGreaterThan: Uint64
 
     """
     Results should have an amount less than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
     """
-    currencyLessThan: Int
+    currencyLessThan: Uint64
 
     """Maximum number of results to return."""
-    limit: Int
+    limit: Uint64
 
     """Include results at or before the specified max-round."""
-    maxRound: Int
+    maxRound: Uint64
 
     """Include results at or after the specified min-round."""
-    minRound: Int
+    minRound: Uint64
 
     """
     The next page of results. Use the next token provided by the previous results.
@@ -87,7 +96,7 @@ type Query {
     rekeyTo: Boolean
 
     """Include results for the specified round."""
-    round: Int
+    round: Uint64
 
     """
     SigType filters just results using the specified type of signature:
@@ -95,24 +104,24 @@ type Query {
     * msig - MultiSig
     * lsig - LogicSig
     """
-    sigType: SigType2
-    txType: TxType2
+    sigType: SigType
+    txType: TxType
 
     """Lookup the specific transaction by ID."""
     txid: String
-  ): V2AccountTransactions
+  ): AccountTransactionsResponse
 
   """
   Search for accounts.
   
   Equivalent to GET /v2/accounts
   """
-  v2Accounts(
+  accounts(
     """Application ID"""
-    applicationId: Int
+    applicationId: Uint64
 
     """Asset ID"""
-    assetId: Int
+    assetId: Uint64
 
     """Include accounts configured to use this spending key."""
     authAddr: String
@@ -120,12 +129,12 @@ type Query {
     """
     Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
     """
-    currencyGreaterThan: Int
+    currencyGreaterThan: Uint64
 
     """
     Results should have an amount less than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
     """
-    currencyLessThan: Int
+    currencyLessThan: Uint64
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -133,7 +142,7 @@ type Query {
     includeAll: Boolean
 
     """Maximum number of results to return."""
-    limit: Int
+    limit: Uint64
 
     """
     The next page of results. Use the next token provided by the previous results.
@@ -143,31 +152,31 @@ type Query {
     """
     Include results for the specified round. For performance reasons, this parameter may be disabled on some configurations.
     """
-    round: Int
-  ): V2Accounts
+    round: Uint64
+  ): AccountsResponse
 
   """
   Lookup application.
   
   Equivalent to GET /v2/applications/{application-id}
   """
-  v2Application(
-    applicationId: Int!
+  application(
+    applicationId: Uint64!
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
     """
     includeAll: Boolean
-  ): V2Application
+  ): ApplicationResponse
 
   """
   Search for applications
   
   Equivalent to GET /v2/applications
   """
-  v2Applications(
+  applications(
     """Application ID"""
-    applicationId: Int
+    applicationId: Uint64
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -175,45 +184,45 @@ type Query {
     includeAll: Boolean
 
     """Maximum number of results to return."""
-    limit: Int
+    limit: Uint64
 
     """
     The next page of results. Use the next token provided by the previous results.
     """
     next: String
-  ): V2Applications
+  ): ApplicationsResponse
 
   """
   Lookup asset information.
   
   Equivalent to GET /v2/assets/{asset-id}
   """
-  v2Asset(
-    assetId: Int!
+  asset(
+    assetId: Uint64!
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
     """
     includeAll: Boolean
-  ): V2Asset
+  ): AssetResponse
 
   """
   Lookup the list of accounts who hold this asset 
   
   Equivalent to GET /v2/assets/{asset-id}/balances
   """
-  v2AssetBalances(
-    assetId: Int!
+  assetBalances(
+    assetId: Uint64!
 
     """
     Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
     """
-    currencyGreaterThan: Int
+    currencyGreaterThan: Uint64
 
     """
     Results should have an amount less than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
     """
-    currencyLessThan: Int
+    currencyLessThan: Uint64
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -221,7 +230,7 @@ type Query {
     includeAll: Boolean
 
     """Maximum number of results to return."""
-    limit: Int
+    limit: Uint64
 
     """
     The next page of results. Use the next token provided by the previous results.
@@ -229,15 +238,15 @@ type Query {
     next: String
 
     """Include results for the specified round."""
-    round: Int
-  ): V2AssetBalances
+    round: Uint64
+  ): AssetBalancesResponse
 
   """
   Lookup transactions for an asset.
   
   Equivalent to GET /v2/assets/{asset-id}/transactions
   """
-  v2AssetTransactions(
+  assetTransactions(
     """
     Only include transactions with this address in one of the transaction fields.
     """
@@ -252,7 +261,7 @@ type Query {
     Include results after the given time. Must be an RFC 3339 formatted string.
     """
     afterTime: String
-    assetId: Int!
+    assetId: Uint64!
 
     """
     Include results before the given time. Must be an RFC 3339 formatted string.
@@ -262,12 +271,12 @@ type Query {
     """
     Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
     """
-    currencyGreaterThan: Int
+    currencyGreaterThan: Uint64
 
     """
     Results should have an amount less than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
     """
-    currencyLessThan: Int
+    currencyLessThan: Uint64
 
     """
     Combine with address and address-role parameters to define what type of address to search for. The close to fields are normally treated as a receiver, if you would like to exclude them set this parameter to true.
@@ -275,13 +284,13 @@ type Query {
     excludeCloseTo: Boolean
 
     """Maximum number of results to return."""
-    limit: Int
+    limit: Uint64
 
     """Include results at or before the specified max-round."""
-    maxRound: Int
+    maxRound: Uint64
 
     """Include results at or after the specified min-round."""
-    minRound: Int
+    minRound: Uint64
 
     """
     The next page of results. Use the next token provided by the previous results.
@@ -295,7 +304,7 @@ type Query {
     rekeyTo: Boolean
 
     """Include results for the specified round."""
-    round: Int
+    round: Uint64
 
     """
     SigType filters just results using the specified type of signature:
@@ -303,21 +312,21 @@ type Query {
     * msig - MultiSig
     * lsig - LogicSig
     """
-    sigType: SigType2
-    txType: TxType2
+    sigType: SigType
+    txType: TxType
 
     """Lookup the specific transaction by ID."""
     txid: String
-  ): V2AssetTransactions
+  ): AssetTransactionsResponse
 
   """
   Search for assets.
   
   Equivalent to GET /v2/assets
   """
-  v2Assets(
+  assets(
     """Asset ID"""
-    assetId: Int
+    assetId: Uint64
 
     """Filter just assets with the given creator address."""
     creator: String
@@ -328,7 +337,7 @@ type Query {
     includeAll: Boolean
 
     """Maximum number of results to return."""
-    limit: Int
+    limit: Uint64
 
     """Filter just assets with the given name."""
     name: String
@@ -340,21 +349,21 @@ type Query {
 
     """Filter just assets with the given unit."""
     unit: String
-  ): V2Assets
+  ): AssetsResponse
 
   """
   Lookup a single transaction.
   
   Equivalent to GET /v2/transactions/{txid}
   """
-  v2Transaction(txid: String!): V2Transaction
+  transaction(txid: String!): TransactionResponse
 
   """
   Search for transactions.
   
   Equivalent to GET /v2/transactions
   """
-  v2Transactions(
+  transactions(
     """
     Only include transactions with this address in one of the transaction fields.
     """
@@ -371,10 +380,10 @@ type Query {
     afterTime: String
 
     """Application ID"""
-    applicationId: Int
+    applicationId: Uint64
 
     """Asset ID"""
-    assetId: Int
+    assetId: Uint64
 
     """
     Include results before the given time. Must be an RFC 3339 formatted string.
@@ -384,12 +393,12 @@ type Query {
     """
     Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
     """
-    currencyGreaterThan: Int
+    currencyGreaterThan: Uint64
 
     """
     Results should have an amount less than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
     """
-    currencyLessThan: Int
+    currencyLessThan: Uint64
 
     """
     Combine with address and address-role parameters to define what type of address to search for. The close to fields are normally treated as a receiver, if you would like to exclude them set this parameter to true.
@@ -397,13 +406,13 @@ type Query {
     excludeCloseTo: Boolean
 
     """Maximum number of results to return."""
-    limit: Int
+    limit: Uint64
 
     """Include results at or before the specified max-round."""
-    maxRound: Int
+    maxRound: Uint64
 
     """Include results at or after the specified min-round."""
-    minRound: Int
+    minRound: Uint64
 
     """
     The next page of results. Use the next token provided by the previous results.
@@ -417,7 +426,7 @@ type Query {
     rekeyTo: Boolean
 
     """Include results for the specified round."""
-    round: Int
+    round: Uint64
 
     """
     SigType filters just results using the specified type of signature:
@@ -425,12 +434,12 @@ type Query {
     * msig - MultiSig
     * lsig - LogicSig
     """
-    sigType: SigType2
-    txType: TxType2
+    sigType: SigType
+    txType: TxType
 
     """Lookup the specific transaction by ID."""
     txid: String
-  ): V2Transactions
+  ): TransactionsResponse
 }
 
 """
@@ -453,13 +462,13 @@ type Block {
   rewards: BlockRewards
 
   """\[rnd\] Current round on which this block was appended to the chain."""
-  round: Int!
+  round: Uint64!
 
   """\[seed\] Sortition seed."""
   seed: String!
 
   """\[ts\] Block creation timestamp in seconds since eposh"""
-  timestamp: Int!
+  timestamp: Uint64!
 
   """\[txns\] list of transactions corresponding to a given round."""
   transactions: [Transaction]
@@ -474,7 +483,7 @@ type Block {
   
   Specifically, TxnCounter is the number of the next transaction that will be committed after this block.  It is 0 when no transactions have ever been committed (since TxnCounter started being supported).
   """
-  txnCounter: Int
+  txnCounter: Uint64
 
   """Fields relating to a protocol upgrade."""
   upgradeState: BlockUpgradeState
@@ -493,12 +502,12 @@ type BlockRewards {
   """
   \[rwcalr\] number of leftover MicroAlgos after the distribution of rewards-rate MicroAlgos for every reward unit in the next round.
   """
-  rewardsCalculationRound: Int!
+  rewardsCalculationRound: Uint64!
 
   """
   \[earn\] How many rewards, in MicroAlgos, have been distributed to each RewardUnit of MicroAlgos since genesis.
   """
-  rewardsLevel: Int!
+  rewardsLevel: Uint64!
 
   """
   \[rwd\] accepts periodic injections from the fee-sink and continually redistributes them as rewards.
@@ -508,12 +517,12 @@ type BlockRewards {
   """
   \[rate\] Number of new MicroAlgos added to the participation stake from rewards at the next round.
   """
-  rewardsRate: Int!
+  rewardsRate: Uint64!
 
   """
   \[frac\] Number of leftover MicroAlgos after the distribution of RewardsRate/rewardUnits MicroAlgos for every reward unit in the next round.
   """
-  rewardsResidue: Int!
+  rewardsResidue: Uint64!
 }
 
 """
@@ -567,29 +576,29 @@ type Transaction {
   authAddr: String
 
   """\[rc\] rewards applied to close-remainder-to account."""
-  closeRewards: Int
+  closeRewards: Uint64
 
   """\[ca\] closing amount for transaction."""
-  closingAmount: Int
+  closingAmount: Uint64
 
   """Round when the transaction was confirmed."""
-  confirmedRound: Int
+  confirmedRound: Uint64
 
   """
   Specifies an application index (ID) if an application was created with this transaction.
   """
-  createdApplicationIndex: Int
+  createdApplicationIndex: Uint64
 
   """
   Specifies an asset index (ID) if an asset was created with this transaction.
   """
-  createdAssetIndex: Int
+  createdAssetIndex: Uint64
 
   """\[fee\] Transaction fee."""
-  fee: Int!
+  fee: Uint64!
 
   """\[fv\] First valid round for this transaction."""
-  firstValid: Int!
+  firstValid: Uint64!
 
   """\[gh\] Hash of genesis block."""
   genesisHash: String
@@ -609,7 +618,7 @@ type Transaction {
   id: String!
 
   """Offset into the round where this transaction was confirmed."""
-  intraRoundOffset: Int
+  intraRoundOffset: Uint64
 
   """
   Fields for a keyreg transaction.
@@ -620,7 +629,7 @@ type Transaction {
   keyregTransaction: TransactionKeyreg
 
   """\[lv\] Last valid round for this transaction."""
-  lastValid: Int!
+  lastValid: Uint64!
 
   """
   \[lx\] Base64 encoded 32-byte array. Lease enforces mutual exclusion of transactions.  If this field is nonzero, then once the transaction is confirmed, it acquires the lease identified by the (Sender, Lease) pair of the transaction until the LastValid round passes.  While this transaction possesses the lease, no other transaction specifying this lease can be confirmed.
@@ -644,7 +653,7 @@ type Transaction {
   paymentTransaction: TransactionPayment
 
   """\[rr\] rewards applied to receiver account."""
-  receiverRewards: Int
+  receiverRewards: Uint64
 
   """
   \[rekey\] when included in a valid transaction, the accounts auth addr will be updated with this value and future signatures must be signed with the key represented by this address.
@@ -652,13 +661,13 @@ type Transaction {
   rekeyTo: String
 
   """Time when the block this transaction is in was confirmed."""
-  roundTime: Int
+  roundTime: Uint64
 
   """\[snd\] Sender's address."""
   sender: String!
 
   """\[rs\] rewards applied to sender account."""
-  senderRewards: Int
+  senderRewards: Uint64
 
   """
   Validation signature associated with some data. Only one of the signatures should be provided.
@@ -697,7 +706,7 @@ type TransactionApplication {
   applicationArgs: [String]
 
   """\[apid\] ID of the application being configured or empty if creating."""
-  applicationId: Int!
+  applicationId: Uint64!
 
   """
   \[apap\] Logic executed for every application transaction, except when on-completion is set to "clear". It can read and write global state for the application, as well as account-specific local state. Approval programs may reject the transaction.
@@ -710,17 +719,17 @@ type TransactionApplication {
   clearStateProgram: String
 
   """\[epp\] specifies the additional app program len requested in pages."""
-  extraProgramPages: Int
+  extraProgramPages: Uint64
 
   """
   \[apfa\] Lists the applications in addition to the application-id whose global states may be accessed by this application's approval-program and clear-state-program. The access is read-only.
   """
-  foreignApps: [Int]
+  foreignApps: [Uint64]
 
   """
   \[apas\] lists the assets whose parameters may be accessed by this application's ApprovalProgram and ClearStateProgram. The access is read-only.
   """
-  foreignAssets: [Int]
+  foreignAssets: [Uint64]
 
   """
   Represents a \[apls\] local-state or \[apgs\] global-state schema. These schemas determine how much storage may be used in a local-state or global-state for an application. The more space used, the larger minimum balance must be maintained in the account holding the data.
@@ -754,12 +763,12 @@ type StateSchema {
   """
   Maximum number of TEAL byte slices that may be stored in the key/value store.
   """
-  numByteSlice: Int!
+  numByteSlice: Uint64!
 
   """
   Maximum number of TEAL uints that may be stored in the key/value store.
   """
-  numUint: Int!
+  numUint: Uint64!
 }
 
 enum OnCompletion {
@@ -783,7 +792,7 @@ data/transactions/asset.go : AssetConfigTxnFields
 """
 type TransactionAssetConfig {
   """\[xaid\] ID of the asset being configured or empty if creating."""
-  assetId: Int
+  assetId: Uint64
 
   """
   AssetParams specifies the parameters for an asset.
@@ -818,7 +827,7 @@ type AssetParams {
   """
   \[dc\] The number of digits to use after the decimal point when displaying this asset. If 0, the asset is not divisible. If 1, the base unit of the asset is in tenths. If 2, the base unit of the asset is in hundredths, and so on. This value must be between 0 and 19 (inclusive).
   """
-  decimals: Int!
+  decimals: Uint64!
 
   """\[df\] Whether holdings of this asset are frozen by default."""
   defaultFrozen: Boolean
@@ -847,7 +856,7 @@ type AssetParams {
   reserve: String
 
   """\[t\] The total number of units of this asset."""
-  total: Int!
+  total: Uint64!
 
   """\[un\] Name of a unit of this asset, as supplied by the creator."""
   unitName: String
@@ -867,7 +876,7 @@ type TransactionAssetFreeze {
   address: String!
 
   """\[faid\] ID of the asset being frozen or thawed."""
-  assetId: Int!
+  assetId: Uint64!
 
   """\[afrz\] The new freeze status."""
   newFreezeStatus: Boolean!
@@ -883,15 +892,15 @@ type TransactionAssetTransfer {
   """
   \[aamt\] Amount of asset to transfer. A zero amount transferred to self allocates that asset in the account's Assets map.
   """
-  amount: Int!
+  amount: Uint64!
 
   """\[xaid\] ID of the asset being transferred."""
-  assetId: Int!
+  assetId: Uint64!
 
   """
   Number of assets transfered to the close-to account as part of the transaction.
   """
-  closeAmount: Int
+  closeAmount: Uint64
 
   """
   \[aclose\] Indicates that the asset should be removed from the account's Assets map, and specifies where the remaining asset holdings should be transferred.  It's always valid to transfer remaining asset holdings to the creator account.
@@ -918,13 +927,13 @@ type EvalDeltaKeyValue {
 """Represents a TEAL value delta."""
 type EvalDelta {
   """\[at\] delta action."""
-  action: Int!
+  action: Uint64!
 
   """\[bs\] bytes value."""
   bytes: String
 
   """\[ui\] uint value."""
-  uint: Int
+  uint: Uint64
 }
 
 """
@@ -943,13 +952,13 @@ type TransactionKeyreg {
   selectionParticipationKey: String
 
   """\[votefst\] First round this participation key is valid."""
-  voteFirstValid: Int
+  voteFirstValid: Uint64
 
   """\[votekd\] Number of subkeys in each batch of participation keys."""
-  voteKeyDilution: Int
+  voteKeyDilution: Uint64
 
   """\[votelst\] Last round this participation key is valid."""
-  voteLastValid: Int
+  voteLastValid: Uint64
 
   """
   \[votekey\] Participation public key used in key registration transactions.
@@ -973,12 +982,12 @@ data/transactions/payment.go : PaymentTxnFields
 """
 type TransactionPayment {
   """\[amt\] number of MicroAlgos intended to be transferred."""
-  amount: Int!
+  amount: Uint64!
 
   """
   Number of MicroAlgos that were sent to the close-remainder-to address when closing the sender account.
   """
-  closeAmount: Int
+  closeAmount: Uint64
 
   """
   \[close\] when set, indicates that the sending account should be closed and all remaining funds be transferred to this address.
@@ -1051,10 +1060,10 @@ type TransactionSignatureMultisig {
   subsignature: [TransactionSignatureMultisigSubsignature]
 
   """\[thr\]"""
-  threshold: Int
+  threshold: Uint64
 
   """\[v\]"""
-  version: Int
+  version: Uint64
 }
 
 type TransactionSignatureMultisigSubsignature {
@@ -1083,15 +1092,15 @@ type BlockUpgradeState {
   nextProtocol: String
 
   """\[nextyes\] Number of blocks which approved the protocol upgrade."""
-  nextProtocolApprovals: Int
+  nextProtocolApprovals: Uint64
 
   """\[nextswitch\] Round on which the protocol upgrade will take effect."""
-  nextProtocolSwitchOn: Int
+  nextProtocolSwitchOn: Uint64
 
   """
   \[nextbefore\] Deadline round for this protocol upgrade (No votes will be consider after this round).
   """
-  nextProtocolVoteBefore: Int
+  nextProtocolVoteBefore: Uint64
 }
 
 """Fields relating to voting for a protocol upgrade."""
@@ -1100,7 +1109,7 @@ type BlockUpgradeVote {
   upgradeApprove: Boolean
 
   """\[upgradedelay\] Indicates the time between acceptance and execution."""
-  upgradeDelay: Int
+  upgradeDelay: Uint64
 
   """\[upgradeprop\] Indicates a proposed upgrade."""
   upgradePropose: String
@@ -1113,15 +1122,10 @@ type HealthCheck {
   errors: [String]
   isMigrating: Boolean!
   message: String!
-  round: Int!
+  round: Uint64!
 }
 
-"""
-The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
-"""
-scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
-
-type V2Account {
+type AccountResponse {
   """
   Account information at a given round.
   
@@ -1132,7 +1136,7 @@ type V2Account {
   account: Account!
 
   """Round at which the results were computed."""
-  currentRound: Int!
+  currentRound: Uint64!
 }
 
 """
@@ -1147,12 +1151,12 @@ type Account {
   address: String!
 
   """\[algo\] total number of MicroAlgos in the account"""
-  amount: Int!
+  amount: Uint64!
 
   """
   specifies the amount of MicroAlgos in the account, without the pending rewards.
   """
-  amountWithoutPendingRewards: Int!
+  amountWithoutPendingRewards: Uint64!
 
   """
   \[appl\] applications local data stored in this account.
@@ -1164,7 +1168,7 @@ type Account {
   """
   \[teap\] the sum of all extra application program pages for this account.
   """
-  appsTotalExtraPages: Int
+  appsTotalExtraPages: Uint64
 
   """Specifies maximums on the number of each type that may be stored."""
   appsTotalSchema: ApplicationStateSchema
@@ -1182,7 +1186,7 @@ type Account {
   authAddr: String
 
   """Round during which this account was most recently closed."""
-  closedAtRound: Int
+  closedAtRound: Uint64
 
   """
   \[appp\] parameters of applications created by this account including app global data.
@@ -1199,7 +1203,7 @@ type Account {
   createdAssets: [Asset]
 
   """Round during which this account first appeared in a transaction."""
-  createdAtRound: Int
+  createdAtRound: Uint64
 
   """Whether or not this account is currently closed."""
   deleted: Boolean
@@ -1210,20 +1214,20 @@ type Account {
   participation: AccountParticipation
 
   """amount of MicroAlgos of pending rewards in this account."""
-  pendingRewards: Int!
+  pendingRewards: Uint64!
 
   """
   \[ebase\] used as part of the rewards computation. Only applicable to accounts which are participating.
   """
-  rewardBase: Int
+  rewardBase: Uint64
 
   """
   \[ern\] total rewards of MicroAlgos the account has received, including pending rewards.
   """
-  rewards: Int!
+  rewards: Uint64!
 
   """The round for which this information is relevant."""
-  round: Int!
+  round: Uint64!
 
   """
   Indicates what type of signature is used by this account, must be one of:
@@ -1245,7 +1249,7 @@ type Account {
 """Stores local state associated with an application."""
 type ApplicationLocalState {
   """Round when account closed out of the application."""
-  closedOutAtRound: Int
+  closedOutAtRound: Uint64
 
   """
   Whether or not the application local state is currently deleted from its account.
@@ -1253,13 +1257,13 @@ type ApplicationLocalState {
   deleted: Boolean
 
   """The application which this local state is for."""
-  id: Int!
+  id: Uint64!
 
   """Represents a key-value store for use in an application."""
   keyValue: [TealKeyValue]
 
   """Round when the account opted into the application."""
-  optedInAtRound: Int
+  optedInAtRound: Uint64
 
   """Specifies maximums on the number of each type that may be stored."""
   schema: ApplicationStateSchema!
@@ -1279,19 +1283,19 @@ type TealValue {
   bytes: String!
 
   """\[tt\] value type."""
-  type: Int!
+  type: Uint64!
 
   """\[ui\] uint value."""
-  uint: Int!
+  uint: Uint64!
 }
 
 """Specifies maximums on the number of each type that may be stored."""
 type ApplicationStateSchema {
   """\[nbs\] num of byte slices."""
-  numByteSlice: Int!
+  numByteSlice: Uint64!
 
   """\[nui\] num of uints."""
-  numUint: Int!
+  numUint: Uint64!
 }
 
 """
@@ -1302,10 +1306,10 @@ data/basics/userBalance.go : AssetHolding
 """
 type AssetHolding {
   """\[a\] number of units held."""
-  amount: Int!
+  amount: Uint64!
 
   """Asset ID of the holding."""
-  assetId: Int!
+  assetId: Uint64!
 
   """
   Address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
@@ -1321,25 +1325,25 @@ type AssetHolding {
   isFrozen: Boolean!
 
   """Round during which the account opted into this asset holding."""
-  optedInAtRound: Int
+  optedInAtRound: Uint64
 
   """Round during which the account opted out of this asset holding."""
-  optedOutAtRound: Int
+  optedOutAtRound: Uint64
 }
 
 """Application index and its parameters"""
 type Application {
   """Round when this application was created."""
-  createdAtRound: Int
+  createdAtRound: Uint64
 
   """Whether or not this application is currently deleted."""
   deleted: Boolean
 
   """Round when this application was deleted."""
-  deletedAtRound: Int
+  deletedAtRound: Uint64
 
   """\[appidx\] application index."""
-  id: Int!
+  id: Uint64!
 
   """Stores the global information associated with an application."""
   params: ApplicationParams!
@@ -1359,7 +1363,7 @@ type ApplicationParams {
   creator: String
 
   """\[epp\] the amount of extra program pages available to this app."""
-  extraProgramPages: Int
+  extraProgramPages: Uint64
 
   """Represents a key-value store for use in an application."""
   globalState: [TealKeyValue]
@@ -1374,16 +1378,16 @@ type ApplicationParams {
 """Specifies both the unique identifier and the parameters for an asset"""
 type Asset {
   """Round during which this asset was created."""
-  createdAtRound: Int
+  createdAtRound: Uint64
 
   """Whether or not this asset is currently deleted."""
   deleted: Boolean
 
   """Round during which this asset was destroyed."""
-  destroyedAtRound: Int
+  destroyedAtRound: Uint64
 
   """unique asset identifier"""
-  index: Int!
+  index: Uint64!
 
   """
   AssetParams specifies the parameters for an asset.
@@ -1406,13 +1410,13 @@ type AccountParticipation {
   selectionParticipationKey: String!
 
   """\[voteFst\] First round for which this participation is valid."""
-  voteFirstValid: Int!
+  voteFirstValid: Uint64!
 
   """\[voteKD\] Number of subkeys in each batch of participation keys."""
-  voteKeyDilution: Int!
+  voteKeyDilution: Uint64!
 
   """\[voteLst\] Last round for which this participation is valid."""
-  voteLastValid: Int!
+  voteLastValid: Uint64!
 
   """
   \[vote\] root participation public key (if any) currently registered for this round.
@@ -1426,9 +1430,9 @@ enum SigType {
   LSIG
 }
 
-type V2AccountTransactions {
+type AccountTransactionsResponse {
   """Round at which the results were computed."""
-  currentRound: Int!
+  currentRound: Uint64!
 
   """
   Used for pagination, when making another request provide this token with the next parameter.
@@ -1437,26 +1441,11 @@ type V2AccountTransactions {
   transactions: [Transaction]!
 }
 
-enum SigType2 {
-  SIG
-  MSIG
-  LSIG
-}
-
-enum TxType2 {
-  PAY
-  KEYREG
-  ACFG
-  AXFER
-  AFRZ
-  APPL
-}
-
-type V2Accounts {
+type AccountsResponse {
   accounts: [Account]!
 
   """Round at which the results were computed."""
-  currentRound: Int!
+  currentRound: Uint64!
 
   """
   Used for pagination, when making another request provide this token with the next parameter.
@@ -1464,19 +1453,19 @@ type V2Accounts {
   nextToken: String
 }
 
-type V2Application {
+type ApplicationResponse {
   """Application index and its parameters"""
   application: Application
 
   """Round at which the results were computed."""
-  currentRound: Int!
+  currentRound: Uint64!
 }
 
-type V2Applications {
+type ApplicationsResponse {
   applications: [Application]!
 
   """Round at which the results were computed."""
-  currentRound: Int!
+  currentRound: Uint64!
 
   """
   Used for pagination, when making another request provide this token with the next parameter.
@@ -1484,19 +1473,19 @@ type V2Applications {
   nextToken: String
 }
 
-type V2Asset {
+type AssetResponse {
   """Specifies both the unique identifier and the parameters for an asset"""
   asset: Asset!
 
   """Round at which the results were computed."""
-  currentRound: Int!
+  currentRound: Uint64!
 }
 
-type V2AssetBalances {
+type AssetBalancesResponse {
   balances: [MiniAssetHolding]!
 
   """Round at which the results were computed."""
-  currentRound: Int!
+  currentRound: Uint64!
 
   """
   Used for pagination, when making another request provide this token with the next parameter.
@@ -1507,7 +1496,7 @@ type V2AssetBalances {
 """A simplified version of AssetHolding """
 type MiniAssetHolding {
   address: String!
-  amount: Int!
+  amount: Uint64!
 
   """
   Whether or not this asset holding is currently deleted from its account.
@@ -1516,15 +1505,15 @@ type MiniAssetHolding {
   isFrozen: Boolean!
 
   """Round during which the account opted into the asset."""
-  optedInAtRound: Int
+  optedInAtRound: Uint64
 
   """Round during which the account opted out of the asset."""
-  optedOutAtRound: Int
+  optedOutAtRound: Uint64
 }
 
-type V2AssetTransactions {
+type AssetTransactionsResponse {
   """Round at which the results were computed."""
-  currentRound: Int!
+  currentRound: Uint64!
 
   """
   Used for pagination, when making another request provide this token with the next parameter.
@@ -1539,11 +1528,11 @@ enum AddressRole {
   FREEZE_TARGET
 }
 
-type V2Assets {
+type AssetsResponse {
   assets: [Asset]!
 
   """Round at which the results were computed."""
-  currentRound: Int!
+  currentRound: Uint64!
 
   """
   Used for pagination, when making another request provide this token with the next parameter.
@@ -1551,9 +1540,9 @@ type V2Assets {
   nextToken: String
 }
 
-type V2Transaction {
+type TransactionResponse {
   """Round at which the results were computed."""
-  currentRound: Int!
+  currentRound: Uint64!
 
   """
   Contains all fields common to all transactions and serves as an envelope to all transactions type.
@@ -1566,9 +1555,9 @@ type V2Transaction {
   transaction: Transaction!
 }
 
-type V2Transactions {
+type TransactionsResponse {
   """Round at which the results were computed."""
-  currentRound: Int!
+  currentRound: Uint64!
 
   """
   Used for pagination, when making another request provide this token with the next parameter.

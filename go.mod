@@ -3,6 +3,7 @@ module github.com/algorand/indexer
 go 1.13
 
 require (
+	github.com/99designs/gqlgen v0.13.0
 	github.com/algorand/go-algorand-sdk v1.9.1
 	github.com/algorand/go-codec/codec v1.1.7
 	github.com/algorand/oapi-codegen v1.3.5-algorand5
@@ -19,6 +20,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	github.com/valyala/fasttemplate v1.2.0 // indirect
+	github.com/vektah/gqlparser/v2 v2.1.0
 	github.com/vektra/mockery v1.1.2 // indirect
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
 )
