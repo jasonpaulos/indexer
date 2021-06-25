@@ -383,12 +383,12 @@ type EvalDeltaKeyValue struct {
 
 // A health check response.
 type HealthCheck struct {
-	Data        *string   `json:"data"`
-	DbAvailable bool      `json:"dbAvailable"`
-	Errors      []*string `json:"errors"`
-	IsMigrating bool      `json:"isMigrating"`
-	Message     string    `json:"message"`
-	Round       uint64    `json:"round"`
+	Data        map[string]interface{} `json:"data"`
+	DbAvailable bool                   `json:"dbAvailable"`
+	Errors      []string               `json:"errors"`
+	IsMigrating bool                   `json:"isMigrating"`
+	Message     string                 `json:"message"`
+	Round       uint64                 `json:"round"`
 }
 
 // A simplified version of AssetHolding

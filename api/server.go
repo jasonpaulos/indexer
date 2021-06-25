@@ -13,7 +13,6 @@ import (
 
 	"github.com/algorand/indexer/api/generated/common"
 	"github.com/algorand/indexer/api/generated/v2"
-	"github.com/algorand/indexer/api/graph"
 	"github.com/algorand/indexer/api/middlewares"
 	"github.com/algorand/indexer/idb"
 )
@@ -69,7 +68,7 @@ func Serve(ctx context.Context, serveAddr string, db idb.IndexerDb, fetcherError
 
 	generated.RegisterHandlers(e, &api, middleware...)
 	common.RegisterHandlers(e, &api)
-	graph.RegisterHandlers(e)
+	RegisterGraphQLHandlers(e, &api)
 
 	if ctx == nil {
 		ctx = context.Background()

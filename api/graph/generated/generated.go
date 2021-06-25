@@ -38,7 +38,6 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
-	SpecifiedBy func(ctx context.Context, obj interface{}, next graphql.Resolver, url string) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -2220,14 +2219,10 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "api/indexer.graphql", Input: `directive @specifiedBy(url: String!) on SCALAR
-
-"""
-The ` + "`" + `JSON` + "`" + ` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
-"""
-scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
-
+	{Name: "api/indexer.graphql", Input: `
 scalar Uint64
+
+scalar Map
 
 type Query {
   """
@@ -3339,9 +3334,9 @@ type BlockUpgradeVote {
 
 """A health check response."""
 type HealthCheck {
-  data: JSON
+  data: Map
   dbAvailable: Boolean!
-  errors: [String]
+  errors: [String!]
   isMigrating: Boolean!
   message: String!
   round: Uint64!
@@ -3794,21 +3789,6 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
-
-func (ec *executionContext) dir_specifiedBy_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["url"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["url"] = arg0
-	return args, nil
-}
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -8990,9 +8970,9 @@ func (ec *executionContext) _HealthCheck_data(ctx context.Context, field graphql
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(map[string]interface{})
 	fc.Result = res
-	return ec.marshalOJSON2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOMap2map(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _HealthCheck_dbAvailable(ctx context.Context, field graphql.CollectedField, obj *model.HealthCheck) (ret graphql.Marshaler) {
@@ -9057,9 +9037,9 @@ func (ec *executionContext) _HealthCheck_errors(ctx context.Context, field graph
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*string)
+	res := resTmp.([]string)
 	fc.Result = res
-	return ec.marshalOString2ᚕᚖstring(ctx, field.Selections, res)
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _HealthCheck_isMigrating(ctx context.Context, field graphql.CollectedField, obj *model.HealthCheck) (ret graphql.Marshaler) {
@@ -17076,19 +17056,19 @@ func (ec *executionContext) marshalOHealthCheck2ᚖgithubᚗcomᚋalgorandᚋind
 	return ec._HealthCheck(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOJSON2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
+func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := graphql.UnmarshalString(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
+	res, err := graphql.UnmarshalMap(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOJSON2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]interface{}) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return graphql.MarshalString(*v)
+	return graphql.MarshalMap(v)
 }
 
 func (ec *executionContext) marshalOMiniAssetHolding2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐMiniAssetHolding(ctx context.Context, sel ast.SelectionSet, v *model.MiniAssetHolding) graphql.Marshaler {
@@ -17128,6 +17108,42 @@ func (ec *executionContext) unmarshalOString2string(ctx context.Context, v inter
 
 func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	return graphql.MarshalString(v)
+}
+
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚕᚖstring(ctx context.Context, v interface{}) ([]*string, error) {

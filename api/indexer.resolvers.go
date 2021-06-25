@@ -1,4 +1,4 @@
-package graph
+package api
 
 // This file will be automatically regenerated based on the schema, any resolver implementations
 // will be copied through when generating and any unknown code will be moved to the end.
@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/algorand/indexer/api/graph/generated"
 	"github.com/algorand/indexer/api/graph/model"
@@ -16,7 +17,34 @@ func (r *queryResolver) Block(ctx context.Context, roundNumber uint64) (*model.B
 }
 
 func (r *queryResolver) HealthCheck(ctx context.Context) (*model.HealthCheck, error) {
-	panic(fmt.Errorf("not implemented"))
+	var errors []string
+
+	health, err := r.si.db.Health()
+	if err != nil {
+		return nil, fmt.Errorf("problem fetching health: %v", err)
+	}
+
+	if health.Error != "" {
+		errors = append(errors, fmt.Sprintf("database error: %s", health.Error))
+	}
+
+	if r.si.fetcher != nil && r.si.fetcher.Error() != "" {
+		errors = append(errors, fmt.Sprintf("fetcher error: %s", r.si.fetcher.Error()))
+	}
+
+	result := model.HealthCheck{
+		Round:       health.Round,
+		IsMigrating: health.IsMigrating,
+		DbAvailable: health.DBAvailable,
+		Message:     strconv.FormatUint(health.Round, 10),
+		Errors:      errors,
+	}
+
+	if health.Data != nil {
+		result.Data = *health.Data
+	}
+
+	return &result, nil
 }
 
 func (r *queryResolver) Account(ctx context.Context, accountID string, includeAll *bool, round *uint64) (*model.AccountResponse, error) {

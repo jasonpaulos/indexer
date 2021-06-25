@@ -1,4 +1,4 @@
-package graph
+package api
 
 import (
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -8,11 +8,11 @@ import (
 )
 
 // RegisterHandlers adds each server route to the EchoRouter.
-func RegisterHandlers(router *echo.Echo, m ...echo.MiddlewareFunc) {
+func RegisterGraphQLHandlers(router *echo.Echo, si *ServerImplementation, m ...echo.MiddlewareFunc) {
 
 	graphqlHandler := handler.NewDefaultServer(
 		generated.NewExecutableSchema(
-			generated.Config{Resolvers: &Resolver{}},
+			generated.Config{Resolvers: &Resolver{si: si}},
 		),
 	)
 
