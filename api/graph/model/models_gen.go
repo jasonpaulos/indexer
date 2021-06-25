@@ -22,15 +22,15 @@ type Account struct {
 	// \[appl\] applications local data stored in this account.
 	//
 	// Note the raw object uses `map[int] -> AppLocalState` for this type.
-	AppsLocalState []*ApplicationLocalState `json:"appsLocalState"`
+	AppsLocalState []ApplicationLocalState `json:"appsLocalState"`
 	// \[teap\] the sum of all extra application program pages for this account.
-	AppsTotalExtraPages *uint64 `json:"appsTotalExtraPages"`
+	AppsTotalExtraPages uint64 `json:"appsTotalExtraPages"`
 	// Specifies maximums on the number of each type that may be stored.
 	AppsTotalSchema *ApplicationStateSchema `json:"appsTotalSchema"`
 	// \[asset\] assets held by this account.
 	//
 	// Note the raw object uses `map[int] -> AssetHolding` for this type.
-	Assets []*AssetHolding `json:"assets"`
+	Assets []AssetHolding `json:"assets"`
 	// \[spend\] the address against which signing should be checked. If empty, the address of the current account is used. This field can be updated in any transaction by setting the RekeyTo field.
 	AuthAddr *string `json:"authAddr"`
 	// Round during which this account was most recently closed.
@@ -38,15 +38,15 @@ type Account struct {
 	// \[appp\] parameters of applications created by this account including app global data.
 	//
 	// Note: the raw account uses `map[int] -> AppParams` for this type.
-	CreatedApps []*Application `json:"createdApps"`
+	CreatedApps []Application `json:"createdApps"`
 	// \[apar\] parameters of assets created by this account.
 	//
 	// Note: the raw account uses `map[int] -> Asset` for this type.
-	CreatedAssets []*Asset `json:"createdAssets"`
+	CreatedAssets []Asset `json:"createdAssets"`
 	// Round during which this account first appeared in a transaction.
 	CreatedAtRound *uint64 `json:"createdAtRound"`
 	// Whether or not this account is currently closed.
-	Deleted *bool `json:"deleted"`
+	Deleted bool `json:"deleted"`
 	// AccountParticipation describes the parameters used by this account in consensus protocol.
 	Participation *AccountParticipation `json:"participation"`
 	// amount of MicroAlgos of pending rewards in this account.
@@ -72,7 +72,7 @@ type Account struct {
 // AccountParticipation describes the parameters used by this account in consensus protocol.
 type AccountParticipation struct {
 	// \[sel\] Selection public key (if any) currently registered for this round.
-	SelectionParticipationKey string `json:"selectionParticipationKey"`
+	SelectionParticipationKey []byte `json:"selectionParticipationKey"`
 	// \[voteFst\] First round for which this participation is valid.
 	VoteFirstValid uint64 `json:"voteFirstValid"`
 	// \[voteKD\] Number of subkeys in each batch of participation keys.
@@ -80,7 +80,7 @@ type AccountParticipation struct {
 	// \[voteLst\] Last round for which this participation is valid.
 	VoteLastValid uint64 `json:"voteLastValid"`
 	// \[vote\] root participation public key (if any) currently registered for this round.
-	VoteParticipationKey string `json:"voteParticipationKey"`
+	VoteParticipationKey []byte `json:"voteParticipationKey"`
 }
 
 type AccountResponse struct {
@@ -97,19 +97,19 @@ type AccountResponse struct {
 type AccountStateDelta struct {
 	Address string `json:"address"`
 	// Application state delta.
-	Delta []*EvalDeltaKeyValue `json:"delta"`
+	Delta []EvalDeltaKeyValue `json:"delta"`
 }
 
 type AccountTransactionsResponse struct {
 	// Round at which the results were computed.
 	CurrentRound uint64 `json:"currentRound"`
 	// Used for pagination, when making another request provide this token with the next parameter.
-	NextToken    *string        `json:"nextToken"`
-	Transactions []*Transaction `json:"transactions"`
+	NextToken    *string       `json:"nextToken"`
+	Transactions []Transaction `json:"transactions"`
 }
 
 type AccountsResponse struct {
-	Accounts []*Account `json:"accounts"`
+	Accounts []Account `json:"accounts"`
 	// Round at which the results were computed.
 	CurrentRound uint64 `json:"currentRound"`
 	// Used for pagination, when making another request provide this token with the next parameter.
@@ -121,11 +121,11 @@ type Application struct {
 	// Round when this application was created.
 	CreatedAtRound *uint64 `json:"createdAtRound"`
 	// Whether or not this application is currently deleted.
-	Deleted *bool `json:"deleted"`
+	Deleted bool `json:"deleted"`
 	// Round when this application was deleted.
 	DeletedAtRound *uint64 `json:"deletedAtRound"`
 	// \[appidx\] application index.
-	ID uint64 `json:"id"`
+	ID uint64 `json:"ID"`
 	// Stores the global information associated with an application.
 	Params *ApplicationParams `json:"params"`
 }
@@ -135,11 +135,11 @@ type ApplicationLocalState struct {
 	// Round when account closed out of the application.
 	ClosedOutAtRound *uint64 `json:"closedOutAtRound"`
 	// Whether or not the application local state is currently deleted from its account.
-	Deleted *bool `json:"deleted"`
+	Deleted bool `json:"deleted"`
 	// The application which this local state is for.
-	ID uint64 `json:"id"`
+	ID uint64 `json:"ID"`
 	// Represents a key-value store for use in an application.
-	KeyValue []*TealKeyValue `json:"keyValue"`
+	KeyValue []TealKeyValue `json:"keyValue"`
 	// Round when the account opted into the application.
 	OptedInAtRound *uint64 `json:"optedInAtRound"`
 	// Specifies maximums on the number of each type that may be stored.
@@ -149,15 +149,15 @@ type ApplicationLocalState struct {
 // Stores the global information associated with an application.
 type ApplicationParams struct {
 	// \[approv\] approval program.
-	ApprovalProgram string `json:"approvalProgram"`
+	ApprovalProgram []byte `json:"approvalProgram"`
 	// \[clearp\] approval program.
-	ClearStateProgram string `json:"clearStateProgram"`
+	ClearStateProgram []byte `json:"clearStateProgram"`
 	// The address that created this application. This is the address where the parameters and global state for this application can be found.
 	Creator *string `json:"creator"`
 	// \[epp\] the amount of extra program pages available to this app.
 	ExtraProgramPages *uint64 `json:"extraProgramPages"`
 	// Represents a key-value store for use in an application.
-	GlobalState []*TealKeyValue `json:"globalState"`
+	GlobalState []TealKeyValue `json:"globalState"`
 	// Specifies maximums on the number of each type that may be stored.
 	GlobalStateSchema *ApplicationStateSchema `json:"globalStateSchema"`
 	// Specifies maximums on the number of each type that may be stored.
@@ -180,7 +180,7 @@ type ApplicationStateSchema struct {
 }
 
 type ApplicationsResponse struct {
-	Applications []*Application `json:"applications"`
+	Applications []Application `json:"applications"`
 	// Round at which the results were computed.
 	CurrentRound uint64 `json:"currentRound"`
 	// Used for pagination, when making another request provide this token with the next parameter.
@@ -192,11 +192,11 @@ type Asset struct {
 	// Round during which this asset was created.
 	CreatedAtRound *uint64 `json:"createdAtRound"`
 	// Whether or not this asset is currently deleted.
-	Deleted *bool `json:"deleted"`
+	Deleted bool `json:"deleted"`
 	// Round during which this asset was destroyed.
 	DestroyedAtRound *uint64 `json:"destroyedAtRound"`
 	// unique asset identifier
-	Index uint64 `json:"index"`
+	ID uint64 `json:"ID"`
 	// AssetParams specifies the parameters for an asset.
 	//
 	// \[apar\] when part of an AssetConfig transaction.
@@ -207,7 +207,7 @@ type Asset struct {
 }
 
 type AssetBalancesResponse struct {
-	Balances []*MiniAssetHolding `json:"balances"`
+	Balances []MiniAssetHolding `json:"balances"`
 	// Round at which the results were computed.
 	CurrentRound uint64 `json:"currentRound"`
 	// Used for pagination, when making another request provide this token with the next parameter.
@@ -222,13 +222,13 @@ type AssetHolding struct {
 	// \[a\] number of units held.
 	Amount uint64 `json:"amount"`
 	// Asset ID of the holding.
-	AssetID uint64 `json:"assetId"`
+	ID uint64 `json:"ID"`
 	// Address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
 	Creator string `json:"creator"`
 	// Whether or not the asset holding is currently deleted from its account.
-	Deleted *bool `json:"deleted"`
+	Deleted bool `json:"deleted"`
 	// \[f\] whether or not the holding is frozen.
-	IsFrozen bool `json:"isFrozen"`
+	Frozen bool `json:"frozen"`
 	// Round during which the account opted into this asset holding.
 	OptedInAtRound *uint64 `json:"optedInAtRound"`
 	// Round during which the account opted out of this asset holding.
@@ -255,7 +255,7 @@ type AssetParams struct {
 	// \[m\] Address of account used to manage the keys of this asset and to destroy it.
 	Manager *string `json:"manager"`
 	// \[am\] A commitment to some unspecified asset metadata. The format of this metadata is up to the application.
-	MetadataHash *string `json:"metadataHash"`
+	MetadataHash []byte `json:"metadataHash"`
 	// \[an\] Name of this asset, as supplied by the creator.
 	Name *string `json:"name"`
 	// \[r\] Address of account holding reserve (non-minted) units of this asset.
@@ -279,12 +279,12 @@ type AssetTransactionsResponse struct {
 	// Round at which the results were computed.
 	CurrentRound uint64 `json:"currentRound"`
 	// Used for pagination, when making another request provide this token with the next parameter.
-	NextToken    *string        `json:"nextToken"`
-	Transactions []*Transaction `json:"transactions"`
+	NextToken    *string       `json:"nextToken"`
+	Transactions []Transaction `json:"transactions"`
 }
 
 type AssetsResponse struct {
-	Assets []*Asset `json:"assets"`
+	Assets []Asset `json:"assets"`
 	// Round at which the results were computed.
 	CurrentRound uint64 `json:"currentRound"`
 	// Used for pagination, when making another request provide this token with the next parameter.
@@ -311,7 +311,7 @@ type Block struct {
 	// \[ts\] Block creation timestamp in seconds since eposh
 	Timestamp uint64 `json:"timestamp"`
 	// \[txns\] list of transactions corresponding to a given round.
-	Transactions []*Transaction `json:"transactions"`
+	Transactions []Transaction `json:"transactions"`
 	// \[txn\] TransactionsRoot authenticates the set of transactions appearing in the block. More specifically, it's the root of a merkle tree whose leaves are the block's Txids, in lexicographic order. For the empty block, it's 0. Note that the TxnRoot does not authenticate the signatures on the transactions, only the transactions themselves. Two blocks with the same transactions but in a different order and with different signatures will have the same TxnRoot.
 	TransactionsRoot string `json:"transactionsRoot"`
 	// \[tc\] TxnCounter counts the number of transactions committed in the ledger, from the time at which support for this feature was introduced.
@@ -396,8 +396,8 @@ type MiniAssetHolding struct {
 	Address string `json:"address"`
 	Amount  uint64 `json:"amount"`
 	// Whether or not this asset holding is currently deleted from its account.
-	Deleted  *bool `json:"deleted"`
-	IsFrozen bool  `json:"isFrozen"`
+	Deleted *bool `json:"deleted"`
+	Frozen  bool  `json:"frozen"`
 	// Round during which the account opted into the asset.
 	OptedInAtRound *uint64 `json:"optedInAtRound"`
 	// Round during which the account opted out of the asset.
@@ -414,7 +414,7 @@ type StateSchema struct {
 
 // Represents a key-value pair in an application store.
 type TealKeyValue struct {
-	Key string `json:"key"`
+	Key []byte `json:"key"`
 	// Represents a TEAL value.
 	Value *TealValue `json:"value"`
 }
@@ -422,7 +422,7 @@ type TealKeyValue struct {
 // Represents a TEAL value.
 type TealValue struct {
 	// \[tb\] bytes value.
-	Bytes string `json:"bytes"`
+	Bytes []byte `json:"bytes"`
 	// \[tt\] value type.
 	Type uint64 `json:"type"`
 	// \[ui\] uint value.
@@ -480,7 +480,7 @@ type Transaction struct {
 	// \[gen\] genesis block ID.
 	GenesisID *string `json:"genesisId"`
 	// Application state delta.
-	GlobalStateDelta []*EvalDeltaKeyValue `json:"globalStateDelta"`
+	GlobalStateDelta []EvalDeltaKeyValue `json:"globalStateDelta"`
 	// \[grp\] Base64 encoded byte array of a sha512/256 digest. When present indicates that this transaction is part of a transaction group and the value is the sha512/256 hash of the transactions in that group.
 	Group *string `json:"group"`
 	// Transaction ID
@@ -497,7 +497,7 @@ type Transaction struct {
 	// \[lx\] Base64 encoded 32-byte array. Lease enforces mutual exclusion of transactions.  If this field is nonzero, then once the transaction is confirmed, it acquires the lease identified by the (Sender, Lease) pair of the transaction until the LastValid round passes.  While this transaction possesses the lease, no other transaction specifying this lease can be confirmed.
 	Lease *string `json:"lease"`
 	// \[ld\] Local state key/value changes for the application being executed by this transaction.
-	LocalStateDelta []*AccountStateDelta `json:"localStateDelta"`
+	LocalStateDelta []AccountStateDelta `json:"localStateDelta"`
 	// \[note\] Free form data.
 	Note *string `json:"note"`
 	// Fields for a payment transaction.
@@ -535,9 +535,9 @@ type Transaction struct {
 // data/transactions/application.go : ApplicationCallTxnFields
 type TransactionApplication struct {
 	// \[apat\] List of accounts in addition to the sender that may be accessed from the application's approval-program and clear-state-program.
-	Accounts []*string `json:"accounts"`
+	Accounts []string `json:"accounts"`
 	// \[apaa\] transaction specific arguments accessed from the application's approval-program and clear-state-program.
-	ApplicationArgs []*string `json:"applicationArgs"`
+	ApplicationArgs []string `json:"applicationArgs"`
 	// \[apid\] ID of the application being configured or empty if creating.
 	ApplicationID uint64 `json:"applicationId"`
 	// \[apap\] Logic executed for every application transaction, except when on-completion is set to "clear". It can read and write global state for the application, as well as account-specific local state. Approval programs may reject the transaction.
@@ -686,7 +686,7 @@ type TransactionSignature struct {
 // data/transactions/logicsig.go
 type TransactionSignatureLogicsig struct {
 	// \[arg\] Logic arguments, base64 encoded.
-	Args []*string `json:"args"`
+	Args []string `json:"args"`
 	// \[l\] Program signed by a signature or multi signature, or hashed to be the address of ana ccount. Base64 encoded TEAL program.
 	Logic string `json:"logic"`
 	// \[msig\] structure holding multiple subsignatures.
@@ -704,7 +704,7 @@ type TransactionSignatureLogicsig struct {
 // crypto/multisig.go : MultisigSig
 type TransactionSignatureMultisig struct {
 	// \[subsig\] holds pairs of public key and signatures.
-	Subsignature []*TransactionSignatureMultisigSubsignature `json:"subsignature"`
+	Subsignature []TransactionSignatureMultisigSubsignature `json:"subsignature"`
 	// \[thr\]
 	Threshold *uint64 `json:"threshold"`
 	// \[v\]
@@ -722,8 +722,8 @@ type TransactionsResponse struct {
 	// Round at which the results were computed.
 	CurrentRound uint64 `json:"currentRound"`
 	// Used for pagination, when making another request provide this token with the next parameter.
-	NextToken    *string        `json:"nextToken"`
-	Transactions []*Transaction `json:"transactions"`
+	NextToken    *string       `json:"nextToken"`
+	Transactions []Transaction `json:"transactions"`
 }
 
 type AddressRole string

@@ -1,6 +1,8 @@
 
 scalar Uint64
 
+scalar Bytes
+
 scalar Map
 
 type Query {
@@ -467,7 +469,7 @@ type Block {
   timestamp: Uint64!
 
   """\[txns\] list of transactions corresponding to a given round."""
-  transactions: [Transaction]
+  transactions: [Transaction!]
 
   """
   \[txn\] TransactionsRoot authenticates the set of transactions appearing in the block. More specifically, it's the root of a merkle tree whose leaves are the block's Txids, in lexicographic order. For the empty block, it's 0. Note that the TxnRoot does not authenticate the signatures on the transactions, only the transactions themselves. Two blocks with the same transactions but in a different order and with different signatures will have the same TxnRoot.
@@ -603,7 +605,7 @@ type Transaction {
   genesisId: String
 
   """Application state delta."""
-  globalStateDelta: [EvalDeltaKeyValue]
+  globalStateDelta: [EvalDeltaKeyValue!]
 
   """
   \[grp\] Base64 encoded byte array of a sha512/256 digest. When present indicates that this transaction is part of a transaction group and the value is the sha512/256 hash of the transactions in that group.
@@ -635,7 +637,7 @@ type Transaction {
   """
   \[ld\] Local state key/value changes for the application being executed by this transaction.
   """
-  localStateDelta: [AccountStateDelta]
+  localStateDelta: [AccountStateDelta!]
 
   """\[note\] Free form data."""
   note: String
@@ -694,12 +696,12 @@ type TransactionApplication {
   """
   \[apat\] List of accounts in addition to the sender that may be accessed from the application's approval-program and clear-state-program.
   """
-  accounts: [String]
+  accounts: [String!]
 
   """
   \[apaa\] transaction specific arguments accessed from the application's approval-program and clear-state-program.
   """
-  applicationArgs: [String]
+  applicationArgs: [String!]
 
   """\[apid\] ID of the application being configured or empty if creating."""
   applicationId: Uint64!
@@ -841,7 +843,7 @@ type AssetParams {
   """
   \[am\] A commitment to some unspecified asset metadata. The format of this metadata is up to the application.
   """
-  metadataHash: String
+  metadataHash: Bytes
 
   """\[an\] Name of this asset, as supplied by the creator."""
   name: String
@@ -967,7 +969,7 @@ type AccountStateDelta {
   address: String!
 
   """Application state delta."""
-  delta: [EvalDeltaKeyValue]!
+  delta: [EvalDeltaKeyValue!]!
 }
 
 """
@@ -1026,7 +1028,7 @@ data/transactions/logicsig.go
 """
 type TransactionSignatureLogicsig {
   """\[arg\] Logic arguments, base64 encoded."""
-  args: [String]
+  args: [String!]
 
   """
   \[l\] Program signed by a signature or multi signature, or hashed to be the address of ana ccount. Base64 encoded TEAL program.
@@ -1053,7 +1055,7 @@ crypto/multisig.go : MultisigSig
 """
 type TransactionSignatureMultisig {
   """\[subsig\] holds pairs of public key and signatures."""
-  subsignature: [TransactionSignatureMultisigSubsignature]
+  subsignature: [TransactionSignatureMultisigSubsignature!]
 
   """\[thr\]"""
   threshold: Uint64
@@ -1159,22 +1161,22 @@ type Account {
   
   Note the raw object uses `map[int] -> AppLocalState` for this type.
   """
-  appsLocalState: [ApplicationLocalState]
+  appsLocalState: [ApplicationLocalState!]!
 
   """
   \[teap\] the sum of all extra application program pages for this account.
   """
-  appsTotalExtraPages: Uint64
+  appsTotalExtraPages: Uint64!
 
   """Specifies maximums on the number of each type that may be stored."""
-  appsTotalSchema: ApplicationStateSchema
+  appsTotalSchema: ApplicationStateSchema!
 
   """
   \[asset\] assets held by this account.
   
   Note the raw object uses `map[int] -> AssetHolding` for this type.
   """
-  assets: [AssetHolding]
+  assets: [AssetHolding!]!
 
   """
   \[spend\] the address against which signing should be checked. If empty, the address of the current account is used. This field can be updated in any transaction by setting the RekeyTo field.
@@ -1189,20 +1191,20 @@ type Account {
   
   Note: the raw account uses `map[int] -> AppParams` for this type.
   """
-  createdApps: [Application]
+  createdApps: [Application!]!
 
   """
   \[apar\] parameters of assets created by this account.
   
   Note: the raw account uses `map[int] -> Asset` for this type.
   """
-  createdAssets: [Asset]
+  createdAssets: [Asset!]!
 
   """Round during which this account first appeared in a transaction."""
   createdAtRound: Uint64
 
   """Whether or not this account is currently closed."""
-  deleted: Boolean
+  deleted: Boolean!
 
   """
   AccountParticipation describes the parameters used by this account in consensus protocol.
@@ -1250,13 +1252,13 @@ type ApplicationLocalState {
   """
   Whether or not the application local state is currently deleted from its account.
   """
-  deleted: Boolean
+  deleted: Boolean!
 
   """The application which this local state is for."""
-  id: Uint64!
+  ID: Uint64!
 
   """Represents a key-value store for use in an application."""
-  keyValue: [TealKeyValue]
+  keyValue: [TealKeyValue!]
 
   """Round when the account opted into the application."""
   optedInAtRound: Uint64
@@ -1267,7 +1269,7 @@ type ApplicationLocalState {
 
 """Represents a key-value pair in an application store."""
 type TealKeyValue {
-  key: String!
+  key: Bytes!
 
   """Represents a TEAL value."""
   value: TealValue!
@@ -1276,7 +1278,7 @@ type TealKeyValue {
 """Represents a TEAL value."""
 type TealValue {
   """\[tb\] bytes value."""
-  bytes: String!
+  bytes: Bytes!
 
   """\[tt\] value type."""
   type: Uint64!
@@ -1305,7 +1307,7 @@ type AssetHolding {
   amount: Uint64!
 
   """Asset ID of the holding."""
-  assetId: Uint64!
+  ID: Uint64!
 
   """
   Address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
@@ -1315,10 +1317,10 @@ type AssetHolding {
   """
   Whether or not the asset holding is currently deleted from its account.
   """
-  deleted: Boolean
+  deleted: Boolean!
 
   """\[f\] whether or not the holding is frozen."""
-  isFrozen: Boolean!
+  frozen: Boolean!
 
   """Round during which the account opted into this asset holding."""
   optedInAtRound: Uint64
@@ -1333,13 +1335,13 @@ type Application {
   createdAtRound: Uint64
 
   """Whether or not this application is currently deleted."""
-  deleted: Boolean
+  deleted: Boolean!
 
   """Round when this application was deleted."""
   deletedAtRound: Uint64
 
   """\[appidx\] application index."""
-  id: Uint64!
+  ID: Uint64!
 
   """Stores the global information associated with an application."""
   params: ApplicationParams!
@@ -1348,10 +1350,10 @@ type Application {
 """Stores the global information associated with an application."""
 type ApplicationParams {
   """\[approv\] approval program."""
-  approvalProgram: String!
+  approvalProgram: Bytes!
 
   """\[clearp\] approval program."""
-  clearStateProgram: String!
+  clearStateProgram: Bytes!
 
   """
   The address that created this application. This is the address where the parameters and global state for this application can be found.
@@ -1362,7 +1364,7 @@ type ApplicationParams {
   extraProgramPages: Uint64
 
   """Represents a key-value store for use in an application."""
-  globalState: [TealKeyValue]
+  globalState: [TealKeyValue!]
 
   """Specifies maximums on the number of each type that may be stored."""
   globalStateSchema: ApplicationStateSchema
@@ -1377,13 +1379,13 @@ type Asset {
   createdAtRound: Uint64
 
   """Whether or not this asset is currently deleted."""
-  deleted: Boolean
+  deleted: Boolean!
 
   """Round during which this asset was destroyed."""
   destroyedAtRound: Uint64
 
   """unique asset identifier"""
-  index: Uint64!
+  ID: Uint64!
 
   """
   AssetParams specifies the parameters for an asset.
@@ -1403,7 +1405,7 @@ type AccountParticipation {
   """
   \[sel\] Selection public key (if any) currently registered for this round.
   """
-  selectionParticipationKey: String!
+  selectionParticipationKey: Bytes!
 
   """\[voteFst\] First round for which this participation is valid."""
   voteFirstValid: Uint64!
@@ -1417,7 +1419,7 @@ type AccountParticipation {
   """
   \[vote\] root participation public key (if any) currently registered for this round.
   """
-  voteParticipationKey: String!
+  voteParticipationKey: Bytes!
 }
 
 enum SigType {
@@ -1434,11 +1436,11 @@ type AccountTransactionsResponse {
   Used for pagination, when making another request provide this token with the next parameter.
   """
   nextToken: String
-  transactions: [Transaction]!
+  transactions: [Transaction!]!
 }
 
 type AccountsResponse {
-  accounts: [Account]!
+  accounts: [Account!]!
 
   """Round at which the results were computed."""
   currentRound: Uint64!
@@ -1458,7 +1460,7 @@ type ApplicationResponse {
 }
 
 type ApplicationsResponse {
-  applications: [Application]!
+  applications: [Application!]!
 
   """Round at which the results were computed."""
   currentRound: Uint64!
@@ -1478,7 +1480,7 @@ type AssetResponse {
 }
 
 type AssetBalancesResponse {
-  balances: [MiniAssetHolding]!
+  balances: [MiniAssetHolding!]!
 
   """Round at which the results were computed."""
   currentRound: Uint64!
@@ -1498,7 +1500,7 @@ type MiniAssetHolding {
   Whether or not this asset holding is currently deleted from its account.
   """
   deleted: Boolean
-  isFrozen: Boolean!
+  frozen: Boolean!
 
   """Round during which the account opted into the asset."""
   optedInAtRound: Uint64
@@ -1515,7 +1517,7 @@ type AssetTransactionsResponse {
   Used for pagination, when making another request provide this token with the next parameter.
   """
   nextToken: String
-  transactions: [Transaction]!
+  transactions: [Transaction!]!
 }
 
 enum AddressRole {
@@ -1525,7 +1527,7 @@ enum AddressRole {
 }
 
 type AssetsResponse {
-  assets: [Asset]!
+  assets: [Asset!]!
 
   """Round at which the results were computed."""
   currentRound: Uint64!
@@ -1559,5 +1561,5 @@ type TransactionsResponse {
   Used for pagination, when making another request provide this token with the next parameter.
   """
   nextToken: String
-  transactions: [Transaction]!
+  transactions: [Transaction!]!
 }

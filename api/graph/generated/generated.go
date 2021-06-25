@@ -141,7 +141,7 @@ type ComplexityRoot struct {
 		CreatedAtRound   func(childComplexity int) int
 		Deleted          func(childComplexity int) int
 		DestroyedAtRound func(childComplexity int) int
-		Index            func(childComplexity int) int
+		ID               func(childComplexity int) int
 		Params           func(childComplexity int) int
 	}
 
@@ -153,10 +153,10 @@ type ComplexityRoot struct {
 
 	AssetHolding struct {
 		Amount          func(childComplexity int) int
-		AssetID         func(childComplexity int) int
 		Creator         func(childComplexity int) int
 		Deleted         func(childComplexity int) int
-		IsFrozen        func(childComplexity int) int
+		Frozen          func(childComplexity int) int
+		ID              func(childComplexity int) int
 		OptedInAtRound  func(childComplexity int) int
 		OptedOutAtRound func(childComplexity int) int
 	}
@@ -255,7 +255,7 @@ type ComplexityRoot struct {
 		Address         func(childComplexity int) int
 		Amount          func(childComplexity int) int
 		Deleted         func(childComplexity int) int
-		IsFrozen        func(childComplexity int) int
+		Frozen          func(childComplexity int) int
 		OptedInAtRound  func(childComplexity int) int
 		OptedOutAtRound func(childComplexity int) int
 	}
@@ -709,7 +709,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Application.DeletedAtRound(childComplexity), true
 
-	case "Application.id":
+	case "Application.ID":
 		if e.complexity.Application.ID == nil {
 			break
 		}
@@ -737,7 +737,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ApplicationLocalState.Deleted(childComplexity), true
 
-	case "ApplicationLocalState.id":
+	case "ApplicationLocalState.ID":
 		if e.complexity.ApplicationLocalState.ID == nil {
 			break
 		}
@@ -884,12 +884,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Asset.DestroyedAtRound(childComplexity), true
 
-	case "Asset.index":
-		if e.complexity.Asset.Index == nil {
+	case "Asset.ID":
+		if e.complexity.Asset.ID == nil {
 			break
 		}
 
-		return e.complexity.Asset.Index(childComplexity), true
+		return e.complexity.Asset.ID(childComplexity), true
 
 	case "Asset.params":
 		if e.complexity.Asset.Params == nil {
@@ -926,13 +926,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.AssetHolding.Amount(childComplexity), true
 
-	case "AssetHolding.assetId":
-		if e.complexity.AssetHolding.AssetID == nil {
-			break
-		}
-
-		return e.complexity.AssetHolding.AssetID(childComplexity), true
-
 	case "AssetHolding.creator":
 		if e.complexity.AssetHolding.Creator == nil {
 			break
@@ -947,12 +940,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.AssetHolding.Deleted(childComplexity), true
 
-	case "AssetHolding.isFrozen":
-		if e.complexity.AssetHolding.IsFrozen == nil {
+	case "AssetHolding.frozen":
+		if e.complexity.AssetHolding.Frozen == nil {
 			break
 		}
 
-		return e.complexity.AssetHolding.IsFrozen(childComplexity), true
+		return e.complexity.AssetHolding.Frozen(childComplexity), true
+
+	case "AssetHolding.ID":
+		if e.complexity.AssetHolding.ID == nil {
+			break
+		}
+
+		return e.complexity.AssetHolding.ID(childComplexity), true
 
 	case "AssetHolding.optedInAtRound":
 		if e.complexity.AssetHolding.OptedInAtRound == nil {
@@ -1388,12 +1388,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.MiniAssetHolding.Deleted(childComplexity), true
 
-	case "MiniAssetHolding.isFrozen":
-		if e.complexity.MiniAssetHolding.IsFrozen == nil {
+	case "MiniAssetHolding.frozen":
+		if e.complexity.MiniAssetHolding.Frozen == nil {
 			break
 		}
 
-		return e.complexity.MiniAssetHolding.IsFrozen(childComplexity), true
+		return e.complexity.MiniAssetHolding.Frozen(childComplexity), true
 
 	case "MiniAssetHolding.optedInAtRound":
 		if e.complexity.MiniAssetHolding.OptedInAtRound == nil {
@@ -2222,6 +2222,8 @@ var sources = []*ast.Source{
 	{Name: "api/indexer.graphql", Input: `
 scalar Uint64
 
+scalar Bytes
+
 scalar Map
 
 type Query {
@@ -2688,7 +2690,7 @@ type Block {
   timestamp: Uint64!
 
   """\[txns\] list of transactions corresponding to a given round."""
-  transactions: [Transaction]
+  transactions: [Transaction!]
 
   """
   \[txn\] TransactionsRoot authenticates the set of transactions appearing in the block. More specifically, it's the root of a merkle tree whose leaves are the block's Txids, in lexicographic order. For the empty block, it's 0. Note that the TxnRoot does not authenticate the signatures on the transactions, only the transactions themselves. Two blocks with the same transactions but in a different order and with different signatures will have the same TxnRoot.
@@ -2824,7 +2826,7 @@ type Transaction {
   genesisId: String
 
   """Application state delta."""
-  globalStateDelta: [EvalDeltaKeyValue]
+  globalStateDelta: [EvalDeltaKeyValue!]
 
   """
   \[grp\] Base64 encoded byte array of a sha512/256 digest. When present indicates that this transaction is part of a transaction group and the value is the sha512/256 hash of the transactions in that group.
@@ -2856,7 +2858,7 @@ type Transaction {
   """
   \[ld\] Local state key/value changes for the application being executed by this transaction.
   """
-  localStateDelta: [AccountStateDelta]
+  localStateDelta: [AccountStateDelta!]
 
   """\[note\] Free form data."""
   note: String
@@ -2915,12 +2917,12 @@ type TransactionApplication {
   """
   \[apat\] List of accounts in addition to the sender that may be accessed from the application's approval-program and clear-state-program.
   """
-  accounts: [String]
+  accounts: [String!]
 
   """
   \[apaa\] transaction specific arguments accessed from the application's approval-program and clear-state-program.
   """
-  applicationArgs: [String]
+  applicationArgs: [String!]
 
   """\[apid\] ID of the application being configured or empty if creating."""
   applicationId: Uint64!
@@ -3062,7 +3064,7 @@ type AssetParams {
   """
   \[am\] A commitment to some unspecified asset metadata. The format of this metadata is up to the application.
   """
-  metadataHash: String
+  metadataHash: Bytes
 
   """\[an\] Name of this asset, as supplied by the creator."""
   name: String
@@ -3188,7 +3190,7 @@ type AccountStateDelta {
   address: String!
 
   """Application state delta."""
-  delta: [EvalDeltaKeyValue]!
+  delta: [EvalDeltaKeyValue!]!
 }
 
 """
@@ -3247,7 +3249,7 @@ data/transactions/logicsig.go
 """
 type TransactionSignatureLogicsig {
   """\[arg\] Logic arguments, base64 encoded."""
-  args: [String]
+  args: [String!]
 
   """
   \[l\] Program signed by a signature or multi signature, or hashed to be the address of ana ccount. Base64 encoded TEAL program.
@@ -3274,7 +3276,7 @@ crypto/multisig.go : MultisigSig
 """
 type TransactionSignatureMultisig {
   """\[subsig\] holds pairs of public key and signatures."""
-  subsignature: [TransactionSignatureMultisigSubsignature]
+  subsignature: [TransactionSignatureMultisigSubsignature!]
 
   """\[thr\]"""
   threshold: Uint64
@@ -3380,22 +3382,22 @@ type Account {
   
   Note the raw object uses ` + "`" + `map[int] -> AppLocalState` + "`" + ` for this type.
   """
-  appsLocalState: [ApplicationLocalState]
+  appsLocalState: [ApplicationLocalState!]!
 
   """
   \[teap\] the sum of all extra application program pages for this account.
   """
-  appsTotalExtraPages: Uint64
+  appsTotalExtraPages: Uint64!
 
   """Specifies maximums on the number of each type that may be stored."""
-  appsTotalSchema: ApplicationStateSchema
+  appsTotalSchema: ApplicationStateSchema!
 
   """
   \[asset\] assets held by this account.
   
   Note the raw object uses ` + "`" + `map[int] -> AssetHolding` + "`" + ` for this type.
   """
-  assets: [AssetHolding]
+  assets: [AssetHolding!]!
 
   """
   \[spend\] the address against which signing should be checked. If empty, the address of the current account is used. This field can be updated in any transaction by setting the RekeyTo field.
@@ -3410,20 +3412,20 @@ type Account {
   
   Note: the raw account uses ` + "`" + `map[int] -> AppParams` + "`" + ` for this type.
   """
-  createdApps: [Application]
+  createdApps: [Application!]!
 
   """
   \[apar\] parameters of assets created by this account.
   
   Note: the raw account uses ` + "`" + `map[int] -> Asset` + "`" + ` for this type.
   """
-  createdAssets: [Asset]
+  createdAssets: [Asset!]!
 
   """Round during which this account first appeared in a transaction."""
   createdAtRound: Uint64
 
   """Whether or not this account is currently closed."""
-  deleted: Boolean
+  deleted: Boolean!
 
   """
   AccountParticipation describes the parameters used by this account in consensus protocol.
@@ -3471,13 +3473,13 @@ type ApplicationLocalState {
   """
   Whether or not the application local state is currently deleted from its account.
   """
-  deleted: Boolean
+  deleted: Boolean!
 
   """The application which this local state is for."""
-  id: Uint64!
+  ID: Uint64!
 
   """Represents a key-value store for use in an application."""
-  keyValue: [TealKeyValue]
+  keyValue: [TealKeyValue!]
 
   """Round when the account opted into the application."""
   optedInAtRound: Uint64
@@ -3488,7 +3490,7 @@ type ApplicationLocalState {
 
 """Represents a key-value pair in an application store."""
 type TealKeyValue {
-  key: String!
+  key: Bytes!
 
   """Represents a TEAL value."""
   value: TealValue!
@@ -3497,7 +3499,7 @@ type TealKeyValue {
 """Represents a TEAL value."""
 type TealValue {
   """\[tb\] bytes value."""
-  bytes: String!
+  bytes: Bytes!
 
   """\[tt\] value type."""
   type: Uint64!
@@ -3526,7 +3528,7 @@ type AssetHolding {
   amount: Uint64!
 
   """Asset ID of the holding."""
-  assetId: Uint64!
+  ID: Uint64!
 
   """
   Address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
@@ -3536,10 +3538,10 @@ type AssetHolding {
   """
   Whether or not the asset holding is currently deleted from its account.
   """
-  deleted: Boolean
+  deleted: Boolean!
 
   """\[f\] whether or not the holding is frozen."""
-  isFrozen: Boolean!
+  frozen: Boolean!
 
   """Round during which the account opted into this asset holding."""
   optedInAtRound: Uint64
@@ -3554,13 +3556,13 @@ type Application {
   createdAtRound: Uint64
 
   """Whether or not this application is currently deleted."""
-  deleted: Boolean
+  deleted: Boolean!
 
   """Round when this application was deleted."""
   deletedAtRound: Uint64
 
   """\[appidx\] application index."""
-  id: Uint64!
+  ID: Uint64!
 
   """Stores the global information associated with an application."""
   params: ApplicationParams!
@@ -3569,10 +3571,10 @@ type Application {
 """Stores the global information associated with an application."""
 type ApplicationParams {
   """\[approv\] approval program."""
-  approvalProgram: String!
+  approvalProgram: Bytes!
 
   """\[clearp\] approval program."""
-  clearStateProgram: String!
+  clearStateProgram: Bytes!
 
   """
   The address that created this application. This is the address where the parameters and global state for this application can be found.
@@ -3583,7 +3585,7 @@ type ApplicationParams {
   extraProgramPages: Uint64
 
   """Represents a key-value store for use in an application."""
-  globalState: [TealKeyValue]
+  globalState: [TealKeyValue!]
 
   """Specifies maximums on the number of each type that may be stored."""
   globalStateSchema: ApplicationStateSchema
@@ -3598,13 +3600,13 @@ type Asset {
   createdAtRound: Uint64
 
   """Whether or not this asset is currently deleted."""
-  deleted: Boolean
+  deleted: Boolean!
 
   """Round during which this asset was destroyed."""
   destroyedAtRound: Uint64
 
   """unique asset identifier"""
-  index: Uint64!
+  ID: Uint64!
 
   """
   AssetParams specifies the parameters for an asset.
@@ -3624,7 +3626,7 @@ type AccountParticipation {
   """
   \[sel\] Selection public key (if any) currently registered for this round.
   """
-  selectionParticipationKey: String!
+  selectionParticipationKey: Bytes!
 
   """\[voteFst\] First round for which this participation is valid."""
   voteFirstValid: Uint64!
@@ -3638,7 +3640,7 @@ type AccountParticipation {
   """
   \[vote\] root participation public key (if any) currently registered for this round.
   """
-  voteParticipationKey: String!
+  voteParticipationKey: Bytes!
 }
 
 enum SigType {
@@ -3655,11 +3657,11 @@ type AccountTransactionsResponse {
   Used for pagination, when making another request provide this token with the next parameter.
   """
   nextToken: String
-  transactions: [Transaction]!
+  transactions: [Transaction!]!
 }
 
 type AccountsResponse {
-  accounts: [Account]!
+  accounts: [Account!]!
 
   """Round at which the results were computed."""
   currentRound: Uint64!
@@ -3679,7 +3681,7 @@ type ApplicationResponse {
 }
 
 type ApplicationsResponse {
-  applications: [Application]!
+  applications: [Application!]!
 
   """Round at which the results were computed."""
   currentRound: Uint64!
@@ -3699,7 +3701,7 @@ type AssetResponse {
 }
 
 type AssetBalancesResponse {
-  balances: [MiniAssetHolding]!
+  balances: [MiniAssetHolding!]!
 
   """Round at which the results were computed."""
   currentRound: Uint64!
@@ -3719,7 +3721,7 @@ type MiniAssetHolding {
   Whether or not this asset holding is currently deleted from its account.
   """
   deleted: Boolean
-  isFrozen: Boolean!
+  frozen: Boolean!
 
   """Round during which the account opted into the asset."""
   optedInAtRound: Uint64
@@ -3736,7 +3738,7 @@ type AssetTransactionsResponse {
   Used for pagination, when making another request provide this token with the next parameter.
   """
   nextToken: String
-  transactions: [Transaction]!
+  transactions: [Transaction!]!
 }
 
 enum AddressRole {
@@ -3746,7 +3748,7 @@ enum AddressRole {
 }
 
 type AssetsResponse {
-  assets: [Asset]!
+  assets: [Asset!]!
 
   """Round at which the results were computed."""
   currentRound: Uint64!
@@ -3780,7 +3782,7 @@ type TransactionsResponse {
   Used for pagination, when making another request provide this token with the next parameter.
   """
   nextToken: String
-  transactions: [Transaction]!
+  transactions: [Transaction!]!
 }
 `, BuiltIn: false},
 }
@@ -4846,11 +4848,14 @@ func (ec *executionContext) _Account_appsLocalState(ctx context.Context, field g
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.ApplicationLocalState)
+	res := resTmp.([]model.ApplicationLocalState)
 	fc.Result = res
-	return ec.marshalOApplicationLocalState2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationLocalState(ctx, field.Selections, res)
+	return ec.marshalNApplicationLocalState2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationLocalStateᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Account_appsTotalExtraPages(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
@@ -4878,11 +4883,14 @@ func (ec *executionContext) _Account_appsTotalExtraPages(ctx context.Context, fi
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*uint64)
+	res := resTmp.(uint64)
 	fc.Result = res
-	return ec.marshalOUint642ᚖuint64(ctx, field.Selections, res)
+	return ec.marshalNUint642uint64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Account_appsTotalSchema(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
@@ -4910,11 +4918,14 @@ func (ec *executionContext) _Account_appsTotalSchema(ctx context.Context, field 
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.ApplicationStateSchema)
 	fc.Result = res
-	return ec.marshalOApplicationStateSchema2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationStateSchema(ctx, field.Selections, res)
+	return ec.marshalNApplicationStateSchema2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationStateSchema(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Account_assets(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
@@ -4942,11 +4953,14 @@ func (ec *executionContext) _Account_assets(ctx context.Context, field graphql.C
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.AssetHolding)
+	res := resTmp.([]model.AssetHolding)
 	fc.Result = res
-	return ec.marshalOAssetHolding2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetHolding(ctx, field.Selections, res)
+	return ec.marshalNAssetHolding2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetHoldingᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Account_authAddr(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
@@ -5038,11 +5052,14 @@ func (ec *executionContext) _Account_createdApps(ctx context.Context, field grap
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Application)
+	res := resTmp.([]model.Application)
 	fc.Result = res
-	return ec.marshalOApplication2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplication(ctx, field.Selections, res)
+	return ec.marshalNApplication2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Account_createdAssets(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
@@ -5070,11 +5087,14 @@ func (ec *executionContext) _Account_createdAssets(ctx context.Context, field gr
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Asset)
+	res := resTmp.([]model.Asset)
 	fc.Result = res
-	return ec.marshalOAsset2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAsset(ctx, field.Selections, res)
+	return ec.marshalNAsset2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Account_createdAtRound(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
@@ -5134,11 +5154,14 @@ func (ec *executionContext) _Account_deleted(ctx context.Context, field graphql.
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*bool)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Account_participation(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
@@ -5407,9 +5430,9 @@ func (ec *executionContext) _AccountParticipation_selectionParticipationKey(ctx 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AccountParticipation_voteFirstValid(ctx context.Context, field graphql.CollectedField, obj *model.AccountParticipation) (ret graphql.Marshaler) {
@@ -5547,9 +5570,9 @@ func (ec *executionContext) _AccountParticipation_voteParticipationKey(ctx conte
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AccountResponse_account(ctx context.Context, field graphql.CollectedField, obj *model.AccountResponse) (ret graphql.Marshaler) {
@@ -5687,9 +5710,9 @@ func (ec *executionContext) _AccountStateDelta_delta(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.EvalDeltaKeyValue)
+	res := resTmp.([]model.EvalDeltaKeyValue)
 	fc.Result = res
-	return ec.marshalNEvalDeltaKeyValue2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValue(ctx, field.Selections, res)
+	return ec.marshalNEvalDeltaKeyValue2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValueᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AccountTransactionsResponse_currentRound(ctx context.Context, field graphql.CollectedField, obj *model.AccountTransactionsResponse) (ret graphql.Marshaler) {
@@ -5789,9 +5812,9 @@ func (ec *executionContext) _AccountTransactionsResponse_transactions(ctx contex
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Transaction)
+	res := resTmp.([]model.Transaction)
 	fc.Result = res
-	return ec.marshalNTransaction2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransaction(ctx, field.Selections, res)
+	return ec.marshalNTransaction2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AccountsResponse_accounts(ctx context.Context, field graphql.CollectedField, obj *model.AccountsResponse) (ret graphql.Marshaler) {
@@ -5824,9 +5847,9 @@ func (ec *executionContext) _AccountsResponse_accounts(ctx context.Context, fiel
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Account)
+	res := resTmp.([]model.Account)
 	fc.Result = res
-	return ec.marshalNAccount2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccount(ctx, field.Selections, res)
+	return ec.marshalNAccount2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AccountsResponse_currentRound(ctx context.Context, field graphql.CollectedField, obj *model.AccountsResponse) (ret graphql.Marshaler) {
@@ -5953,11 +5976,14 @@ func (ec *executionContext) _Application_deleted(ctx context.Context, field grap
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*bool)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Application_deletedAtRound(ctx context.Context, field graphql.CollectedField, obj *model.Application) (ret graphql.Marshaler) {
@@ -5992,7 +6018,7 @@ func (ec *executionContext) _Application_deletedAtRound(ctx context.Context, fie
 	return ec.marshalOUint642ᚖuint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Application_id(ctx context.Context, field graphql.CollectedField, obj *model.Application) (ret graphql.Marshaler) {
+func (ec *executionContext) _Application_ID(ctx context.Context, field graphql.CollectedField, obj *model.Application) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -6119,14 +6145,17 @@ func (ec *executionContext) _ApplicationLocalState_deleted(ctx context.Context, 
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*bool)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ApplicationLocalState_id(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationLocalState) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApplicationLocalState_ID(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationLocalState) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -6188,9 +6217,9 @@ func (ec *executionContext) _ApplicationLocalState_keyValue(ctx context.Context,
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.TealKeyValue)
+	res := resTmp.([]model.TealKeyValue)
 	fc.Result = res
-	return ec.marshalOTealKeyValue2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTealKeyValue(ctx, field.Selections, res)
+	return ec.marshalOTealKeyValue2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTealKeyValueᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ApplicationLocalState_optedInAtRound(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationLocalState) (ret graphql.Marshaler) {
@@ -6290,9 +6319,9 @@ func (ec *executionContext) _ApplicationParams_approvalProgram(ctx context.Conte
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ApplicationParams_clearStateProgram(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationParams) (ret graphql.Marshaler) {
@@ -6325,9 +6354,9 @@ func (ec *executionContext) _ApplicationParams_clearStateProgram(ctx context.Con
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ApplicationParams_creator(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationParams) (ret graphql.Marshaler) {
@@ -6421,9 +6450,9 @@ func (ec *executionContext) _ApplicationParams_globalState(ctx context.Context, 
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.TealKeyValue)
+	res := resTmp.([]model.TealKeyValue)
 	fc.Result = res
-	return ec.marshalOTealKeyValue2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTealKeyValue(ctx, field.Selections, res)
+	return ec.marshalOTealKeyValue2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTealKeyValueᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ApplicationParams_globalStateSchema(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationParams) (ret graphql.Marshaler) {
@@ -6657,9 +6686,9 @@ func (ec *executionContext) _ApplicationsResponse_applications(ctx context.Conte
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Application)
+	res := resTmp.([]model.Application)
 	fc.Result = res
-	return ec.marshalNApplication2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplication(ctx, field.Selections, res)
+	return ec.marshalNApplication2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ApplicationsResponse_currentRound(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationsResponse) (ret graphql.Marshaler) {
@@ -6786,11 +6815,14 @@ func (ec *executionContext) _Asset_deleted(ctx context.Context, field graphql.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*bool)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Asset_destroyedAtRound(ctx context.Context, field graphql.CollectedField, obj *model.Asset) (ret graphql.Marshaler) {
@@ -6825,7 +6857,7 @@ func (ec *executionContext) _Asset_destroyedAtRound(ctx context.Context, field g
 	return ec.marshalOUint642ᚖuint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Asset_index(ctx context.Context, field graphql.CollectedField, obj *model.Asset) (ret graphql.Marshaler) {
+func (ec *executionContext) _Asset_ID(ctx context.Context, field graphql.CollectedField, obj *model.Asset) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -6843,7 +6875,7 @@ func (ec *executionContext) _Asset_index(ctx context.Context, field graphql.Coll
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Index, nil
+		return obj.ID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6925,9 +6957,9 @@ func (ec *executionContext) _AssetBalancesResponse_balances(ctx context.Context,
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.MiniAssetHolding)
+	res := resTmp.([]model.MiniAssetHolding)
 	fc.Result = res
-	return ec.marshalNMiniAssetHolding2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐMiniAssetHolding(ctx, field.Selections, res)
+	return ec.marshalNMiniAssetHolding2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐMiniAssetHoldingᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AssetBalancesResponse_currentRound(ctx context.Context, field graphql.CollectedField, obj *model.AssetBalancesResponse) (ret graphql.Marshaler) {
@@ -7032,7 +7064,7 @@ func (ec *executionContext) _AssetHolding_amount(ctx context.Context, field grap
 	return ec.marshalNUint642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _AssetHolding_assetId(ctx context.Context, field graphql.CollectedField, obj *model.AssetHolding) (ret graphql.Marshaler) {
+func (ec *executionContext) _AssetHolding_ID(ctx context.Context, field graphql.CollectedField, obj *model.AssetHolding) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -7050,7 +7082,7 @@ func (ec *executionContext) _AssetHolding_assetId(ctx context.Context, field gra
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.AssetID, nil
+		return obj.ID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7127,14 +7159,17 @@ func (ec *executionContext) _AssetHolding_deleted(ctx context.Context, field gra
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*bool)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _AssetHolding_isFrozen(ctx context.Context, field graphql.CollectedField, obj *model.AssetHolding) (ret graphql.Marshaler) {
+func (ec *executionContext) _AssetHolding_frozen(ctx context.Context, field graphql.CollectedField, obj *model.AssetHolding) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -7152,7 +7187,7 @@ func (ec *executionContext) _AssetHolding_isFrozen(ctx context.Context, field gr
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.IsFrozen, nil
+		return obj.Frozen, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7458,9 +7493,9 @@ func (ec *executionContext) _AssetParams_metadataHash(ctx context.Context, field
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AssetParams_name(ctx context.Context, field graphql.CollectedField, obj *model.AssetParams) (ret graphql.Marshaler) {
@@ -7793,9 +7828,9 @@ func (ec *executionContext) _AssetTransactionsResponse_transactions(ctx context.
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Transaction)
+	res := resTmp.([]model.Transaction)
 	fc.Result = res
-	return ec.marshalNTransaction2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransaction(ctx, field.Selections, res)
+	return ec.marshalNTransaction2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AssetsResponse_assets(ctx context.Context, field graphql.CollectedField, obj *model.AssetsResponse) (ret graphql.Marshaler) {
@@ -7828,9 +7863,9 @@ func (ec *executionContext) _AssetsResponse_assets(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Asset)
+	res := resTmp.([]model.Asset)
 	fc.Result = res
-	return ec.marshalNAsset2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAsset(ctx, field.Selections, res)
+	return ec.marshalNAsset2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AssetsResponse_currentRound(ctx context.Context, field graphql.CollectedField, obj *model.AssetsResponse) (ret graphql.Marshaler) {
@@ -8169,9 +8204,9 @@ func (ec *executionContext) _Block_transactions(ctx context.Context, field graph
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Transaction)
+	res := resTmp.([]model.Transaction)
 	fc.Result = res
-	return ec.marshalOTransaction2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransaction(ctx, field.Selections, res)
+	return ec.marshalOTransaction2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Block_transactionsRoot(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
@@ -9249,7 +9284,7 @@ func (ec *executionContext) _MiniAssetHolding_deleted(ctx context.Context, field
 	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _MiniAssetHolding_isFrozen(ctx context.Context, field graphql.CollectedField, obj *model.MiniAssetHolding) (ret graphql.Marshaler) {
+func (ec *executionContext) _MiniAssetHolding_frozen(ctx context.Context, field graphql.CollectedField, obj *model.MiniAssetHolding) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -9267,7 +9302,7 @@ func (ec *executionContext) _MiniAssetHolding_isFrozen(ctx context.Context, fiel
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.IsFrozen, nil
+		return obj.Frozen, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10019,9 +10054,9 @@ func (ec *executionContext) _TealKeyValue_key(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TealKeyValue_value(ctx context.Context, field graphql.CollectedField, obj *model.TealKeyValue) (ret graphql.Marshaler) {
@@ -10089,9 +10124,9 @@ func (ec *executionContext) _TealValue_bytes(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TealValue_type(ctx context.Context, field graphql.CollectedField, obj *model.TealValue) (ret graphql.Marshaler) {
@@ -10645,9 +10680,9 @@ func (ec *executionContext) _Transaction_globalStateDelta(ctx context.Context, f
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.EvalDeltaKeyValue)
+	res := resTmp.([]model.EvalDeltaKeyValue)
 	fc.Result = res
-	return ec.marshalOEvalDeltaKeyValue2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValue(ctx, field.Selections, res)
+	return ec.marshalOEvalDeltaKeyValue2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValueᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Transaction_group(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
@@ -10875,9 +10910,9 @@ func (ec *executionContext) _Transaction_localStateDelta(ctx context.Context, fi
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.AccountStateDelta)
+	res := resTmp.([]model.AccountStateDelta)
 	fc.Result = res
-	return ec.marshalOAccountStateDelta2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStateDelta(ctx, field.Selections, res)
+	return ec.marshalOAccountStateDelta2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStateDeltaᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Transaction_note(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
@@ -11204,9 +11239,9 @@ func (ec *executionContext) _TransactionApplication_accounts(ctx context.Context
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*string)
+	res := resTmp.([]string)
 	fc.Result = res
-	return ec.marshalOString2ᚕᚖstring(ctx, field.Selections, res)
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionApplication_applicationArgs(ctx context.Context, field graphql.CollectedField, obj *model.TransactionApplication) (ret graphql.Marshaler) {
@@ -11236,9 +11271,9 @@ func (ec *executionContext) _TransactionApplication_applicationArgs(ctx context.
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*string)
+	res := resTmp.([]string)
 	fc.Result = res
-	return ec.marshalOString2ᚕᚖstring(ctx, field.Selections, res)
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionApplication_applicationId(ctx context.Context, field graphql.CollectedField, obj *model.TransactionApplication) (ret graphql.Marshaler) {
@@ -12424,9 +12459,9 @@ func (ec *executionContext) _TransactionSignatureLogicsig_args(ctx context.Conte
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*string)
+	res := resTmp.([]string)
 	fc.Result = res
-	return ec.marshalOString2ᚕᚖstring(ctx, field.Selections, res)
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionSignatureLogicsig_logic(ctx context.Context, field graphql.CollectedField, obj *model.TransactionSignatureLogicsig) (ret graphql.Marshaler) {
@@ -12555,9 +12590,9 @@ func (ec *executionContext) _TransactionSignatureMultisig_subsignature(ctx conte
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.TransactionSignatureMultisigSubsignature)
+	res := resTmp.([]model.TransactionSignatureMultisigSubsignature)
 	fc.Result = res
-	return ec.marshalOTransactionSignatureMultisigSubsignature2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionSignatureMultisigSubsignature(ctx, field.Selections, res)
+	return ec.marshalOTransactionSignatureMultisigSubsignature2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionSignatureMultisigSubsignatureᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionSignatureMultisig_threshold(ctx context.Context, field graphql.CollectedField, obj *model.TransactionSignatureMultisig) (ret graphql.Marshaler) {
@@ -12785,9 +12820,9 @@ func (ec *executionContext) _TransactionsResponse_transactions(ctx context.Conte
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Transaction)
+	res := resTmp.([]model.Transaction)
 	fc.Result = res
-	return ec.marshalNTransaction2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransaction(ctx, field.Selections, res)
+	return ec.marshalNTransaction2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -13913,24 +13948,45 @@ func (ec *executionContext) _Account(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "appsLocalState":
 			out.Values[i] = ec._Account_appsLocalState(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "appsTotalExtraPages":
 			out.Values[i] = ec._Account_appsTotalExtraPages(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "appsTotalSchema":
 			out.Values[i] = ec._Account_appsTotalSchema(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "assets":
 			out.Values[i] = ec._Account_assets(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "authAddr":
 			out.Values[i] = ec._Account_authAddr(ctx, field, obj)
 		case "closedAtRound":
 			out.Values[i] = ec._Account_closedAtRound(ctx, field, obj)
 		case "createdApps":
 			out.Values[i] = ec._Account_createdApps(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createdAssets":
 			out.Values[i] = ec._Account_createdAssets(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createdAtRound":
 			out.Values[i] = ec._Account_createdAtRound(ctx, field, obj)
 		case "deleted":
 			out.Values[i] = ec._Account_deleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "participation":
 			out.Values[i] = ec._Account_participation(ctx, field, obj)
 		case "pendingRewards":
@@ -14162,10 +14218,13 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 			out.Values[i] = ec._Application_createdAtRound(ctx, field, obj)
 		case "deleted":
 			out.Values[i] = ec._Application_deleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "deletedAtRound":
 			out.Values[i] = ec._Application_deletedAtRound(ctx, field, obj)
-		case "id":
-			out.Values[i] = ec._Application_id(ctx, field, obj)
+		case "ID":
+			out.Values[i] = ec._Application_ID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -14200,8 +14259,11 @@ func (ec *executionContext) _ApplicationLocalState(ctx context.Context, sel ast.
 			out.Values[i] = ec._ApplicationLocalState_closedOutAtRound(ctx, field, obj)
 		case "deleted":
 			out.Values[i] = ec._ApplicationLocalState_deleted(ctx, field, obj)
-		case "id":
-			out.Values[i] = ec._ApplicationLocalState_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "ID":
+			out.Values[i] = ec._ApplicationLocalState_ID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -14377,10 +14439,13 @@ func (ec *executionContext) _Asset(ctx context.Context, sel ast.SelectionSet, ob
 			out.Values[i] = ec._Asset_createdAtRound(ctx, field, obj)
 		case "deleted":
 			out.Values[i] = ec._Asset_deleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "destroyedAtRound":
 			out.Values[i] = ec._Asset_destroyedAtRound(ctx, field, obj)
-		case "index":
-			out.Values[i] = ec._Asset_index(ctx, field, obj)
+		case "ID":
+			out.Values[i] = ec._Asset_ID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -14450,8 +14515,8 @@ func (ec *executionContext) _AssetHolding(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "assetId":
-			out.Values[i] = ec._AssetHolding_assetId(ctx, field, obj)
+		case "ID":
+			out.Values[i] = ec._AssetHolding_ID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -14462,8 +14527,11 @@ func (ec *executionContext) _AssetHolding(ctx context.Context, sel ast.Selection
 			}
 		case "deleted":
 			out.Values[i] = ec._AssetHolding_deleted(ctx, field, obj)
-		case "isFrozen":
-			out.Values[i] = ec._AssetHolding_isFrozen(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "frozen":
+			out.Values[i] = ec._AssetHolding_frozen(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -14951,8 +15019,8 @@ func (ec *executionContext) _MiniAssetHolding(ctx context.Context, sel ast.Selec
 			}
 		case "deleted":
 			out.Values[i] = ec._MiniAssetHolding_deleted(ctx, field, obj)
-		case "isFrozen":
-			out.Values[i] = ec._MiniAssetHolding_isFrozen(ctx, field, obj)
+		case "frozen":
+			out.Values[i] = ec._MiniAssetHolding_frozen(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -16002,7 +16070,11 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) marshalNAccount2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccount(ctx context.Context, sel ast.SelectionSet, v []*model.Account) graphql.Marshaler {
+func (ec *executionContext) marshalNAccount2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccount(ctx context.Context, sel ast.SelectionSet, v model.Account) graphql.Marshaler {
+	return ec._Account(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAccount2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Account) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -16026,7 +16098,7 @@ func (ec *executionContext) marshalNAccount2ᚕᚖgithubᚗcomᚋalgorandᚋinde
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOAccount2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccount(ctx, sel, v[i])
+			ret[i] = ec.marshalNAccount2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccount(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -16049,7 +16121,15 @@ func (ec *executionContext) marshalNAccount2ᚖgithubᚗcomᚋalgorandᚋindexer
 	return ec._Account(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNApplication2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplication(ctx context.Context, sel ast.SelectionSet, v []*model.Application) graphql.Marshaler {
+func (ec *executionContext) marshalNAccountStateDelta2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStateDelta(ctx context.Context, sel ast.SelectionSet, v model.AccountStateDelta) graphql.Marshaler {
+	return ec._AccountStateDelta(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNApplication2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplication(ctx context.Context, sel ast.SelectionSet, v model.Application) graphql.Marshaler {
+	return ec._Application(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNApplication2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Application) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -16073,7 +16153,48 @@ func (ec *executionContext) marshalNApplication2ᚕᚖgithubᚗcomᚋalgorandᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOApplication2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplication(ctx, sel, v[i])
+			ret[i] = ec.marshalNApplication2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplication(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNApplicationLocalState2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationLocalState(ctx context.Context, sel ast.SelectionSet, v model.ApplicationLocalState) graphql.Marshaler {
+	return ec._ApplicationLocalState(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNApplicationLocalState2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationLocalStateᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ApplicationLocalState) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNApplicationLocalState2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationLocalState(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -16106,7 +16227,11 @@ func (ec *executionContext) marshalNApplicationStateSchema2ᚖgithubᚗcomᚋalg
 	return ec._ApplicationStateSchema(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNAsset2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAsset(ctx context.Context, sel ast.SelectionSet, v []*model.Asset) graphql.Marshaler {
+func (ec *executionContext) marshalNAsset2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAsset(ctx context.Context, sel ast.SelectionSet, v model.Asset) graphql.Marshaler {
+	return ec._Asset(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAsset2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Asset) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -16130,7 +16255,7 @@ func (ec *executionContext) marshalNAsset2ᚕᚖgithubᚗcomᚋalgorandᚋindexe
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOAsset2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAsset(ctx, sel, v[i])
+			ret[i] = ec.marshalNAsset2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAsset(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -16151,6 +16276,47 @@ func (ec *executionContext) marshalNAsset2ᚖgithubᚗcomᚋalgorandᚋindexer�
 		return graphql.Null
 	}
 	return ec._Asset(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAssetHolding2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetHolding(ctx context.Context, sel ast.SelectionSet, v model.AssetHolding) graphql.Marshaler {
+	return ec._AssetHolding(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAssetHolding2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetHoldingᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AssetHolding) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAssetHolding2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetHolding(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
 }
 
 func (ec *executionContext) marshalNAssetParams2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetParams(ctx context.Context, sel ast.SelectionSet, v *model.AssetParams) graphql.Marshaler {
@@ -16178,6 +16344,27 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNBytes2ᚕbyte(ctx context.Context, v interface{}) ([]byte, error) {
+	res, err := model.UnmarshalBytes(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNBytes2ᚕbyte(ctx context.Context, sel ast.SelectionSet, v []byte) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := model.MarshalBytes(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) marshalNEvalDelta2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDelta(ctx context.Context, sel ast.SelectionSet, v *model.EvalDelta) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -16188,7 +16375,11 @@ func (ec *executionContext) marshalNEvalDelta2ᚖgithubᚗcomᚋalgorandᚋindex
 	return ec._EvalDelta(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNEvalDeltaKeyValue2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValue(ctx context.Context, sel ast.SelectionSet, v []*model.EvalDeltaKeyValue) graphql.Marshaler {
+func (ec *executionContext) marshalNEvalDeltaKeyValue2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValue(ctx context.Context, sel ast.SelectionSet, v model.EvalDeltaKeyValue) graphql.Marshaler {
+	return ec._EvalDeltaKeyValue(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNEvalDeltaKeyValue2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValueᚄ(ctx context.Context, sel ast.SelectionSet, v []model.EvalDeltaKeyValue) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -16212,7 +16403,7 @@ func (ec *executionContext) marshalNEvalDeltaKeyValue2ᚕᚖgithubᚗcomᚋalgor
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOEvalDeltaKeyValue2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValue(ctx, sel, v[i])
+			ret[i] = ec.marshalNEvalDeltaKeyValue2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValue(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -16225,7 +16416,11 @@ func (ec *executionContext) marshalNEvalDeltaKeyValue2ᚕᚖgithubᚗcomᚋalgor
 	return ret
 }
 
-func (ec *executionContext) marshalNMiniAssetHolding2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐMiniAssetHolding(ctx context.Context, sel ast.SelectionSet, v []*model.MiniAssetHolding) graphql.Marshaler {
+func (ec *executionContext) marshalNMiniAssetHolding2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐMiniAssetHolding(ctx context.Context, sel ast.SelectionSet, v model.MiniAssetHolding) graphql.Marshaler {
+	return ec._MiniAssetHolding(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMiniAssetHolding2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐMiniAssetHoldingᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MiniAssetHolding) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -16249,7 +16444,7 @@ func (ec *executionContext) marshalNMiniAssetHolding2ᚕᚖgithubᚗcomᚋalgora
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOMiniAssetHolding2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐMiniAssetHolding(ctx, sel, v[i])
+			ret[i] = ec.marshalNMiniAssetHolding2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐMiniAssetHolding(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -16287,6 +16482,10 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) marshalNTealKeyValue2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTealKeyValue(ctx context.Context, sel ast.SelectionSet, v model.TealKeyValue) graphql.Marshaler {
+	return ec._TealKeyValue(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNTealValue2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTealValue(ctx context.Context, sel ast.SelectionSet, v *model.TealValue) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -16297,7 +16496,11 @@ func (ec *executionContext) marshalNTealValue2ᚖgithubᚗcomᚋalgorandᚋindex
 	return ec._TealValue(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNTransaction2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransaction(ctx context.Context, sel ast.SelectionSet, v []*model.Transaction) graphql.Marshaler {
+func (ec *executionContext) marshalNTransaction2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransaction(ctx context.Context, sel ast.SelectionSet, v model.Transaction) graphql.Marshaler {
+	return ec._Transaction(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTransaction2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Transaction) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -16321,7 +16524,7 @@ func (ec *executionContext) marshalNTransaction2ᚕᚖgithubᚗcomᚋalgorandᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOTransaction2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransaction(ctx, sel, v[i])
+			ret[i] = ec.marshalNTransaction2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransaction(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -16352,6 +16555,10 @@ func (ec *executionContext) marshalNTransactionSignature2ᚖgithubᚗcomᚋalgor
 		return graphql.Null
 	}
 	return ec._TransactionSignature(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTransactionSignatureMultisigSubsignature2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionSignatureMultisigSubsignature(ctx context.Context, sel ast.SelectionSet, v model.TransactionSignatureMultisigSubsignature) graphql.Marshaler {
+	return ec._TransactionSignatureMultisigSubsignature(ctx, sel, &v)
 }
 
 func (ec *executionContext) unmarshalNTxType2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTxType(ctx context.Context, v interface{}) (model.TxType, error) {
@@ -16608,13 +16815,6 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
-func (ec *executionContext) marshalOAccount2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccount(ctx context.Context, sel ast.SelectionSet, v *model.Account) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Account(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalOAccountParticipation2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountParticipation(ctx context.Context, sel ast.SelectionSet, v *model.AccountParticipation) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -16629,7 +16829,7 @@ func (ec *executionContext) marshalOAccountResponse2ᚖgithubᚗcomᚋalgorand�
 	return ec._AccountResponse(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOAccountStateDelta2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStateDelta(ctx context.Context, sel ast.SelectionSet, v []*model.AccountStateDelta) graphql.Marshaler {
+func (ec *executionContext) marshalOAccountStateDelta2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStateDeltaᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AccountStateDelta) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -16656,7 +16856,7 @@ func (ec *executionContext) marshalOAccountStateDelta2ᚕᚖgithubᚗcomᚋalgor
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOAccountStateDelta2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStateDelta(ctx, sel, v[i])
+			ret[i] = ec.marshalNAccountStateDelta2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStateDelta(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -16667,13 +16867,6 @@ func (ec *executionContext) marshalOAccountStateDelta2ᚕᚖgithubᚗcomᚋalgor
 	}
 	wg.Wait()
 	return ret
-}
-
-func (ec *executionContext) marshalOAccountStateDelta2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStateDelta(ctx context.Context, sel ast.SelectionSet, v *model.AccountStateDelta) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._AccountStateDelta(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAccountTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountTransactionsResponse(ctx context.Context, sel ast.SelectionSet, v *model.AccountTransactionsResponse) graphql.Marshaler {
@@ -16706,98 +16899,11 @@ func (ec *executionContext) marshalOAddressRole2ᚖgithubᚗcomᚋalgorandᚋind
 	return v
 }
 
-func (ec *executionContext) marshalOApplication2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplication(ctx context.Context, sel ast.SelectionSet, v []*model.Application) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOApplication2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplication(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
 func (ec *executionContext) marshalOApplication2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplication(ctx context.Context, sel ast.SelectionSet, v *model.Application) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Application(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOApplicationLocalState2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationLocalState(ctx context.Context, sel ast.SelectionSet, v []*model.ApplicationLocalState) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOApplicationLocalState2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationLocalState(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
-func (ec *executionContext) marshalOApplicationLocalState2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationLocalState(ctx context.Context, sel ast.SelectionSet, v *model.ApplicationLocalState) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._ApplicationLocalState(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOApplicationResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationResponse(ctx context.Context, sel ast.SelectionSet, v *model.ApplicationResponse) graphql.Marshaler {
@@ -16821,105 +16927,11 @@ func (ec *executionContext) marshalOApplicationsResponse2ᚖgithubᚗcomᚋalgor
 	return ec._ApplicationsResponse(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOAsset2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAsset(ctx context.Context, sel ast.SelectionSet, v []*model.Asset) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOAsset2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAsset(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
-func (ec *executionContext) marshalOAsset2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAsset(ctx context.Context, sel ast.SelectionSet, v *model.Asset) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Asset(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalOAssetBalancesResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetBalancesResponse(ctx context.Context, sel ast.SelectionSet, v *model.AssetBalancesResponse) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._AssetBalancesResponse(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOAssetHolding2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetHolding(ctx context.Context, sel ast.SelectionSet, v []*model.AssetHolding) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOAssetHolding2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetHolding(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
-func (ec *executionContext) marshalOAssetHolding2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetHolding(ctx context.Context, sel ast.SelectionSet, v *model.AssetHolding) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._AssetHolding(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAssetParams2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetParams(ctx context.Context, sel ast.SelectionSet, v *model.AssetParams) graphql.Marshaler {
@@ -17002,7 +17014,22 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return graphql.MarshalBoolean(*v)
 }
 
-func (ec *executionContext) marshalOEvalDeltaKeyValue2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValue(ctx context.Context, sel ast.SelectionSet, v []*model.EvalDeltaKeyValue) graphql.Marshaler {
+func (ec *executionContext) unmarshalOBytes2ᚕbyte(ctx context.Context, v interface{}) ([]byte, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := model.UnmarshalBytes(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOBytes2ᚕbyte(ctx context.Context, sel ast.SelectionSet, v []byte) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return model.MarshalBytes(v)
+}
+
+func (ec *executionContext) marshalOEvalDeltaKeyValue2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValueᚄ(ctx context.Context, sel ast.SelectionSet, v []model.EvalDeltaKeyValue) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -17029,7 +17056,7 @@ func (ec *executionContext) marshalOEvalDeltaKeyValue2ᚕᚖgithubᚗcomᚋalgor
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOEvalDeltaKeyValue2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValue(ctx, sel, v[i])
+			ret[i] = ec.marshalNEvalDeltaKeyValue2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValue(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -17040,13 +17067,6 @@ func (ec *executionContext) marshalOEvalDeltaKeyValue2ᚕᚖgithubᚗcomᚋalgor
 	}
 	wg.Wait()
 	return ret
-}
-
-func (ec *executionContext) marshalOEvalDeltaKeyValue2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValue(ctx context.Context, sel ast.SelectionSet, v *model.EvalDeltaKeyValue) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._EvalDeltaKeyValue(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOHealthCheck2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐHealthCheck(ctx context.Context, sel ast.SelectionSet, v *model.HealthCheck) graphql.Marshaler {
@@ -17069,13 +17089,6 @@ func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.Selecti
 		return graphql.Null
 	}
 	return graphql.MarshalMap(v)
-}
-
-func (ec *executionContext) marshalOMiniAssetHolding2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐMiniAssetHolding(ctx context.Context, sel ast.SelectionSet, v *model.MiniAssetHolding) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._MiniAssetHolding(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOSigType2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐSigType(ctx context.Context, v interface{}) (*model.SigType, error) {
@@ -17146,42 +17159,6 @@ func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel
 	return ret
 }
 
-func (ec *executionContext) unmarshalOString2ᚕᚖstring(ctx context.Context, v interface{}) ([]*string, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]*string, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalOString2ᚖstring(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalOString2ᚕᚖstring(ctx context.Context, sel ast.SelectionSet, v []*string) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	for i := range v {
-		ret[i] = ec.marshalOString2ᚖstring(ctx, sel, v[i])
-	}
-
-	return ret
-}
-
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -17197,7 +17174,7 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	return graphql.MarshalString(*v)
 }
 
-func (ec *executionContext) marshalOTealKeyValue2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTealKeyValue(ctx context.Context, sel ast.SelectionSet, v []*model.TealKeyValue) graphql.Marshaler {
+func (ec *executionContext) marshalOTealKeyValue2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTealKeyValueᚄ(ctx context.Context, sel ast.SelectionSet, v []model.TealKeyValue) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -17224,7 +17201,7 @@ func (ec *executionContext) marshalOTealKeyValue2ᚕᚖgithubᚗcomᚋalgorand�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOTealKeyValue2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTealKeyValue(ctx, sel, v[i])
+			ret[i] = ec.marshalNTealKeyValue2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTealKeyValue(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -17237,14 +17214,7 @@ func (ec *executionContext) marshalOTealKeyValue2ᚕᚖgithubᚗcomᚋalgorand�
 	return ret
 }
 
-func (ec *executionContext) marshalOTealKeyValue2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTealKeyValue(ctx context.Context, sel ast.SelectionSet, v *model.TealKeyValue) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._TealKeyValue(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOTransaction2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransaction(ctx context.Context, sel ast.SelectionSet, v []*model.Transaction) graphql.Marshaler {
+func (ec *executionContext) marshalOTransaction2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Transaction) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -17271,7 +17241,7 @@ func (ec *executionContext) marshalOTransaction2ᚕᚖgithubᚗcomᚋalgorandᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOTransaction2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransaction(ctx, sel, v[i])
+			ret[i] = ec.marshalNTransaction2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransaction(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -17282,13 +17252,6 @@ func (ec *executionContext) marshalOTransaction2ᚕᚖgithubᚗcomᚋalgorandᚋ
 	}
 	wg.Wait()
 	return ret
-}
-
-func (ec *executionContext) marshalOTransaction2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransaction(ctx context.Context, sel ast.SelectionSet, v *model.Transaction) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Transaction(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOTransactionApplication2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionApplication(ctx context.Context, sel ast.SelectionSet, v *model.TransactionApplication) graphql.Marshaler {
@@ -17354,7 +17317,7 @@ func (ec *executionContext) marshalOTransactionSignatureMultisig2ᚖgithubᚗcom
 	return ec._TransactionSignatureMultisig(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOTransactionSignatureMultisigSubsignature2ᚕᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionSignatureMultisigSubsignature(ctx context.Context, sel ast.SelectionSet, v []*model.TransactionSignatureMultisigSubsignature) graphql.Marshaler {
+func (ec *executionContext) marshalOTransactionSignatureMultisigSubsignature2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionSignatureMultisigSubsignatureᚄ(ctx context.Context, sel ast.SelectionSet, v []model.TransactionSignatureMultisigSubsignature) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -17381,7 +17344,7 @@ func (ec *executionContext) marshalOTransactionSignatureMultisigSubsignature2ᚕ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOTransactionSignatureMultisigSubsignature2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionSignatureMultisigSubsignature(ctx, sel, v[i])
+			ret[i] = ec.marshalNTransactionSignatureMultisigSubsignature2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionSignatureMultisigSubsignature(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -17392,13 +17355,6 @@ func (ec *executionContext) marshalOTransactionSignatureMultisigSubsignature2ᚕ
 	}
 	wg.Wait()
 	return ret
-}
-
-func (ec *executionContext) marshalOTransactionSignatureMultisigSubsignature2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionSignatureMultisigSubsignature(ctx context.Context, sel ast.SelectionSet, v *model.TransactionSignatureMultisigSubsignature) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._TransactionSignatureMultisigSubsignature(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionsResponse(ctx context.Context, sel ast.SelectionSet, v *model.TransactionsResponse) graphql.Marshaler {
