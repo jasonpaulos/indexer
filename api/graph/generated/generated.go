@@ -261,7 +261,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Account             func(childComplexity int, accountID string, includeAll *bool, round *uint64) int
+		Account             func(childComplexity int, address string, includeAll *bool, round *uint64) int
 		AccountTransactions func(childComplexity int, accountID string, afterTime *string, assetID *uint64, beforeTime *string, currencyGreaterThan *uint64, currencyLessThan *uint64, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix *string, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, txid *string) int
 		Accounts            func(childComplexity int, applicationID *uint64, assetID *uint64, authAddr *string, currencyGreaterThan *uint64, currencyLessThan *uint64, includeAll *bool, limit *uint64, next *string, round *uint64) int
 		Application         func(childComplexity int, applicationID uint64, includeAll *bool) int
@@ -415,7 +415,7 @@ type ComplexityRoot struct {
 type QueryResolver interface {
 	Block(ctx context.Context, roundNumber uint64) (*model.Block, error)
 	HealthCheck(ctx context.Context) (*model.HealthCheck, error)
-	Account(ctx context.Context, accountID string, includeAll *bool, round *uint64) (*model.AccountResponse, error)
+	Account(ctx context.Context, address string, includeAll *bool, round *uint64) (*model.AccountResponse, error)
 	AccountTransactions(ctx context.Context, accountID string, afterTime *string, assetID *uint64, beforeTime *string, currencyGreaterThan *uint64, currencyLessThan *uint64, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix *string, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, txid *string) (*model.AccountTransactionsResponse, error)
 	Accounts(ctx context.Context, applicationID *uint64, assetID *uint64, authAddr *string, currencyGreaterThan *uint64, currencyLessThan *uint64, includeAll *bool, limit *uint64, next *string, round *uint64) (*model.AccountsResponse, error)
 	Application(ctx context.Context, applicationID uint64, includeAll *bool) (*model.ApplicationResponse, error)
@@ -1419,7 +1419,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Account(childComplexity, args["accountId"].(string), args["includeAll"].(*bool), args["round"].(*uint64)), true
+		return e.complexity.Query.Account(childComplexity, args["address"].(string), args["includeAll"].(*bool), args["round"].(*uint64)), true
 
 	case "Query.accountTransactions":
 		if e.complexity.Query.AccountTransactions == nil {
@@ -1443,7 +1443,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Accounts(childComplexity, args["applicationId"].(*uint64), args["assetId"].(*uint64), args["authAddr"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["includeAll"].(*bool), args["limit"].(*uint64), args["next"].(*string), args["round"].(*uint64)), true
+		return e.complexity.Query.Accounts(childComplexity, args["applicationID"].(*uint64), args["assetID"].(*uint64), args["authAddr"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["includeAll"].(*bool), args["limit"].(*uint64), args["next"].(*string), args["round"].(*uint64)), true
 
 	case "Query.application":
 		if e.complexity.Query.Application == nil {
@@ -2251,7 +2251,7 @@ type Query {
   """
   account(
     """account string"""
-    accountId: String!
+    address: String!
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -2337,10 +2337,10 @@ type Query {
   """
   accounts(
     """Application ID"""
-    applicationId: Uint64
+    applicationID: Uint64
 
     """Asset ID"""
-    assetId: Uint64
+    assetID: Uint64
 
     """Include accounts configured to use this spending key."""
     authAddr: String
@@ -3961,14 +3961,14 @@ func (ec *executionContext) field_Query_account_args(ctx context.Context, rawArg
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["accountId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountId"))
+	if tmp, ok := rawArgs["address"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("address"))
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["accountId"] = arg0
+	args["address"] = arg0
 	var arg1 *bool
 	if tmp, ok := rawArgs["includeAll"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeAll"))
@@ -3994,23 +3994,23 @@ func (ec *executionContext) field_Query_accounts_args(ctx context.Context, rawAr
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *uint64
-	if tmp, ok := rawArgs["applicationId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("applicationId"))
+	if tmp, ok := rawArgs["applicationID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("applicationID"))
 		arg0, err = ec.unmarshalOUint642ᚖuint64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["applicationId"] = arg0
+	args["applicationID"] = arg0
 	var arg1 *uint64
-	if tmp, ok := rawArgs["assetId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("assetId"))
+	if tmp, ok := rawArgs["assetID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("assetID"))
 		arg1, err = ec.unmarshalOUint642ᚖuint64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["assetId"] = arg1
+	args["assetID"] = arg1
 	var arg2 *string
 	if tmp, ok := rawArgs["authAddr"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authAddr"))
@@ -9479,7 +9479,7 @@ func (ec *executionContext) _Query_account(ctx context.Context, field graphql.Co
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Account(rctx, args["accountId"].(string), args["includeAll"].(*bool), args["round"].(*uint64))
+		return ec.resolvers.Query().Account(rctx, args["address"].(string), args["includeAll"].(*bool), args["round"].(*uint64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9557,7 +9557,7 @@ func (ec *executionContext) _Query_accounts(ctx context.Context, field graphql.C
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Accounts(rctx, args["applicationId"].(*uint64), args["assetId"].(*uint64), args["authAddr"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["includeAll"].(*bool), args["limit"].(*uint64), args["next"].(*string), args["round"].(*uint64))
+		return ec.resolvers.Query().Accounts(rctx, args["applicationID"].(*uint64), args["assetID"].(*uint64), args["authAddr"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["includeAll"].(*bool), args["limit"].(*uint64), args["next"].(*string), args["round"].(*uint64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

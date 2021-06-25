@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strconv"
 
+	sdk_types "github.com/algorand/go-algorand-sdk/types"
 	graphGenerated "github.com/algorand/indexer/api/graph/generated"
 	"github.com/algorand/indexer/api/graph/helper"
 	"github.com/algorand/indexer/api/graph/model"
@@ -49,14 +50,14 @@ func (r *queryResolver) HealthCheck(ctx context.Context) (*model.HealthCheck, er
 	return &result, nil
 }
 
-func (r *queryResolver) Account(ctx context.Context, accountID string, includeAll *bool, round *uint64) (*model.AccountResponse, error) {
-	addr, errors := decodeAddress(&accountID, "account-id", make([]string, 0))
+func (r *queryResolver) Account(ctx context.Context, address string, includeAll *bool, round *uint64) (*model.AccountResponse, error) {
+	addr, errors := decodeAddress(&address, "account-id", make([]string, 0))
 	if len(errors) != 0 {
 		return nil, fmt.Errorf(errors[0])
 	}
 
 	// Special accounts non handling
-	isSpecialAccount, err := r.si.isSpecialAccount(accountID)
+	isSpecialAccount, err := r.si.isSpecialAccount(address)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", errFailedLoadSpecialAccounts, err)
 	}
@@ -79,11 +80,11 @@ func (r *queryResolver) Account(ctx context.Context, accountID string, includeAl
 	}
 
 	if len(accounts) == 0 {
-		return nil, fmt.Errorf("%s: %s", errNoAccountsFound, accountID)
+		return nil, fmt.Errorf("%s: %s", errNoAccountsFound, address)
 	}
 
 	if len(accounts) > 1 {
-		return nil, fmt.Errorf("%s: %s", errMultipleAccounts, accountID)
+		return nil, fmt.Errorf("%s: %s", errMultipleAccounts, address)
 	}
 
 	return &model.AccountResponse{
@@ -97,7 +98,58 @@ func (r *queryResolver) AccountTransactions(ctx context.Context, accountID strin
 }
 
 func (r *queryResolver) Accounts(ctx context.Context, applicationID *uint64, assetID *uint64, authAddr *string, currencyGreaterThan *uint64, currencyLessThan *uint64, includeAll *bool, limit *uint64, next *string, round *uint64) (*model.AccountsResponse, error) {
-	panic(fmt.Errorf("not implemented"))
+	if !r.si.EnableAddressSearchRoundRewind && round != nil {
+		return nil, fmt.Errorf(errMultiAcctRewind)
+	}
+
+	spendingAddr, errors := decodeAddress(authAddr, "account-id", make([]string, 0))
+	if len(errors) != 0 {
+		return nil, fmt.Errorf(errors[0])
+	}
+
+	options := idb.AccountQueryOptions{
+		IncludeAssetHoldings: true,
+		IncludeAssetParams:   true,
+		Limit:                min(uintOrDefaultValue(limit, defaultAccountsLimit), maxAccountsLimit),
+		HasAssetID:           uintOrDefault(assetID),
+		HasAppID:             uintOrDefault(applicationID),
+		EqualToAuthAddr:      spendingAddr[:],
+		IncludeDeleted:       boolOrDefault(includeAll),
+	}
+
+	// Set GT/LT on Algos or Asset depending on whether or not an assetID was specified
+	if options.HasAssetID == 0 {
+		options.AlgosGreaterThan = currencyGreaterThan
+		options.AlgosLessThan = currencyLessThan
+	} else {
+		options.AssetGT = currencyGreaterThan
+		options.AssetLT = currencyLessThan
+	}
+
+	if next != nil {
+		addr, err := sdk_types.DecodeAddress(*next)
+		if err != nil {
+			return nil, fmt.Errorf(errUnableToParseNext)
+		}
+		options.GreaterThanAddress = addr[:]
+	}
+
+	accounts, currentRound, err := r.si.fetchAccounts(ctx, options, round)
+
+	if err != nil {
+		return nil, fmt.Errorf("%s: %v", errFailedSearchingAccount, err)
+	}
+
+	var nextToken *string
+	if len(accounts) > 0 {
+		nextToken = strPtr(accounts[len(accounts)-1].Address)
+	}
+
+	return &model.AccountsResponse{
+		CurrentRound: currentRound,
+		NextToken:    nextToken,
+		Accounts:     helper.InternalAccountsToModel(accounts),
+	}, nil
 }
 
 func (r *queryResolver) Application(ctx context.Context, applicationID uint64, includeAll *bool) (*model.ApplicationResponse, error) {

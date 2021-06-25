@@ -64,6 +64,14 @@ func InternalAccountParticipationToModel(participation *generated.AccountPartici
 	}
 }
 
+func InternalAccountsToModel(accounts []generated.Account) []model.Account {
+	converted := make([]model.Account, len(accounts))
+	for i, account := range accounts {
+		converted[i] = *InternalAccountToModel(account)
+	}
+	return converted
+}
+
 func InternalAccountToModel(account generated.Account) *model.Account {
 	return &model.Account{
 		Address:                     account.Address,

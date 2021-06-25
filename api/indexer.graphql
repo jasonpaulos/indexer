@@ -30,7 +30,7 @@ type Query {
   """
   account(
     """account string"""
-    accountId: String!
+    address: String!
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -116,10 +116,10 @@ type Query {
   """
   accounts(
     """Application ID"""
-    applicationId: Uint64
+    applicationID: Uint64
 
     """Asset ID"""
-    assetId: Uint64
+    assetID: Uint64
 
     """Include accounts configured to use this spending key."""
     authAddr: String
