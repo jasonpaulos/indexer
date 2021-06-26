@@ -5,10 +5,13 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strconv"
+	"time"
 
 	sdk_types "github.com/algorand/go-algorand-sdk/types"
+	generated "github.com/algorand/indexer/api/generated/v2"
 	graphGenerated "github.com/algorand/indexer/api/graph/generated"
 	"github.com/algorand/indexer/api/graph/helper"
 	"github.com/algorand/indexer/api/graph/model"
@@ -16,7 +19,12 @@ import (
 )
 
 func (r *queryResolver) Block(ctx context.Context, roundNumber uint64) (*model.Block, error) {
-	panic(fmt.Errorf("not implemented"))
+	blk, err := r.si.fetchBlock(ctx, roundNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	return helper.InternalBlockToModel(blk), nil
 }
 
 func (r *queryResolver) HealthCheck(ctx context.Context) (*model.HealthCheck, error) {
@@ -93,8 +101,14 @@ func (r *queryResolver) Account(ctx context.Context, address string, includeAll 
 	}, nil
 }
 
-func (r *queryResolver) AccountTransactions(ctx context.Context, accountID string, afterTime *string, assetID *uint64, beforeTime *string, currencyGreaterThan *uint64, currencyLessThan *uint64, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix *string, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, txid *string) (*model.AccountTransactionsResponse, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) AccountTransactions(ctx context.Context, account string, afterTime *time.Time, assetID *uint64, beforeTime *time.Time, currencyGreaterThan *uint64, currencyLessThan *uint64, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix []byte, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, id *string) (*model.TransactionsResponse, error) {
+	// Check that a valid account was provided
+	_, errors := decodeAddress(strPtr(account), "account", make([]string, 0))
+	if len(errors) != 0 {
+		return nil, fmt.Errorf(errors[0])
+	}
+
+	return r.Transactions(ctx, strPtr(account), nil, afterTime, nil, nil, beforeTime, currencyGreaterThan, currencyLessThan, nil, limit, maxRound, minRound, next, notePrefix, rekeyTo, round, sigType, txType, id)
 }
 
 func (r *queryResolver) Accounts(ctx context.Context, applicationID *uint64, assetID *uint64, authAddr *string, currencyGreaterThan *uint64, currencyLessThan *uint64, includeAll *bool, limit *uint64, next *string, round *uint64) (*model.AccountsResponse, error) {
@@ -152,36 +166,224 @@ func (r *queryResolver) Accounts(ctx context.Context, applicationID *uint64, ass
 	}, nil
 }
 
-func (r *queryResolver) Application(ctx context.Context, applicationID uint64, includeAll *bool) (*model.ApplicationResponse, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) Application(ctx context.Context, id uint64, includeAll *bool) (*model.ApplicationResponse, error) {
+	p := &generated.SearchForApplicationsParams{
+		ApplicationId: &id,
+		IncludeAll:    includeAll,
+	}
+	results, currentRound := r.si.db.Applications(ctx, p)
+	out := model.ApplicationResponse{
+		CurrentRound: currentRound,
+	}
+	for result := range results {
+		if result.Error != nil {
+			return nil, result.Error
+		}
+		out.Application = helper.InternalApplicationToModel(result.Application)
+		return &out, nil
+	}
+	return nil, fmt.Errorf("%s: %d", errNoApplicationsFound, id)
 }
 
-func (r *queryResolver) Applications(ctx context.Context, applicationID *uint64, includeAll *bool, limit *uint64, next *string) (*model.ApplicationsResponse, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) Applications(ctx context.Context, id *uint64, includeAll *bool, limit *uint64, next *string) (*model.ApplicationsResponse, error) {
+	p := &generated.SearchForApplicationsParams{
+		ApplicationId: id,
+		IncludeAll:    includeAll,
+		Limit:         limit,
+		Next:          next,
+	}
+	results, round := r.si.db.Applications(ctx, p)
+	apps := make([]generated.Application, 0)
+	for result := range results {
+		if result.Error != nil {
+			return nil, result.Error
+		}
+		apps = append(apps, result.Application)
+	}
+
+	var nextToken *string
+	if len(apps) > 0 {
+		nextToken = strPtr(strconv.FormatUint(apps[len(apps)-1].Id, 10))
+	}
+
+	return &model.ApplicationsResponse{
+		Applications: helper.InternalApplicationsToModel(&apps),
+		CurrentRound: round,
+		NextToken:    nextToken,
+	}, nil
 }
 
-func (r *queryResolver) Asset(ctx context.Context, assetID uint64, includeAll *bool) (*model.AssetResponse, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) Asset(ctx context.Context, id uint64, includeAll *bool) (*model.AssetResponse, error) {
+	search := generated.SearchForAssetsParams{
+		AssetId:    uint64Ptr(id),
+		Limit:      uint64Ptr(1),
+		IncludeAll: includeAll,
+	}
+	options, err := assetParamsToAssetQuery(search)
+	if err != nil {
+		return nil, err
+	}
+
+	assets, currentRound, err := r.si.fetchAssets(ctx, options)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(assets) == 0 {
+		return nil, fmt.Errorf("%s: %d", errNoAssetsFound, id)
+	}
+
+	if len(assets) > 1 {
+		return nil, fmt.Errorf("%s: %d", errMultipleAssets, id)
+	}
+
+	return &model.AssetResponse{
+		Asset:        helper.InternalAssetToModel(assets[0]),
+		CurrentRound: currentRound,
+	}, nil
 }
 
 func (r *queryResolver) AssetBalances(ctx context.Context, assetID uint64, currencyGreaterThan *uint64, currencyLessThan *uint64, includeAll *bool, limit *uint64, next *string, round *uint64) (*model.AssetBalancesResponse, error) {
-	panic(fmt.Errorf("not implemented"))
+	query := idb.AssetBalanceQuery{
+		AssetID:        assetID,
+		AmountGT:       currencyGreaterThan,
+		AmountLT:       currencyLessThan,
+		IncludeDeleted: boolOrDefault(includeAll),
+		Limit:          min(uintOrDefaultValue(limit, defaultBalancesLimit), maxBalancesLimit),
+	}
+
+	if next != nil {
+		addr, err := sdk_types.DecodeAddress(*next)
+		if err != nil {
+			return nil, fmt.Errorf(errUnableToParseNext)
+		}
+		query.PrevAddress = addr[:]
+	}
+
+	balances, currentRound, err := r.si.fetchAssetBalances(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	var nextToken *string
+	if len(balances) > 0 {
+		nextToken = strPtr(balances[len(balances)-1].Address)
+	}
+
+	return &model.AssetBalancesResponse{
+		CurrentRound: currentRound,
+		NextToken:    nextToken,
+		Balances:     helper.InternalMiniAssetHoldingsToModel(&balances),
+	}, nil
 }
 
-func (r *queryResolver) AssetTransactions(ctx context.Context, address *string, addressRole *model.AddressRole, afterTime *string, assetID uint64, beforeTime *string, currencyGreaterThan *uint64, currencyLessThan *uint64, excludeCloseTo *bool, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix *string, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, txid *string) (*model.AssetTransactionsResponse, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) AssetTransactions(ctx context.Context, address *string, addressRole *model.AddressRole, afterTime *time.Time, assetID uint64, beforeTime *time.Time, currencyGreaterThan *uint64, currencyLessThan *uint64, excludeCloseTo *bool, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix []byte, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, id *string) (*model.TransactionsResponse, error) {
+	return r.Transactions(ctx, address, addressRole, afterTime, nil, uint64Ptr(assetID), beforeTime, currencyGreaterThan, currencyGreaterThan, excludeCloseTo, limit, maxRound, minRound, next, notePrefix, rekeyTo, round, sigType, txType, id)
 }
 
-func (r *queryResolver) Assets(ctx context.Context, assetID *uint64, creator *string, includeAll *bool, limit *uint64, name *string, next *string, unit *string) (*model.AssetsResponse, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) Assets(ctx context.Context, id *uint64, creator *string, includeAll *bool, limit *uint64, name *string, next *string, unit *string) (*model.AssetsResponse, error) {
+	search := generated.SearchForAssetsParams{
+		AssetId:    id,
+		Limit:      limit,
+		IncludeAll: includeAll,
+		Next:       next,
+		Creator:    creator,
+		Name:       name,
+		Unit:       unit,
+	}
+	options, err := assetParamsToAssetQuery(search)
+	if err != nil {
+		return nil, err
+	}
+
+	assets, currentRound, err := r.si.fetchAssets(ctx, options)
+	if err != nil {
+		return nil, err
+	}
+
+	var nextToken *string
+	if len(assets) > 0 {
+		nextToken = strPtr(strconv.FormatUint(assets[len(assets)-1].Index, 10))
+	}
+
+	return &model.AssetsResponse{
+		Assets:       helper.InternalAssetsToModel(&assets),
+		CurrentRound: currentRound,
+		NextToken:    nextToken,
+	}, nil
 }
 
-func (r *queryResolver) Transaction(ctx context.Context, txid string) (*model.TransactionResponse, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) Transaction(ctx context.Context, id string) (*model.TransactionResponse, error) {
+	filter, err := transactionParamsToTransactionFilter(generated.SearchForTransactionsParams{
+		Txid: strPtr(id),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch the transactions
+	txns, _, round, err := r.si.fetchTransactions(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %v", errTransactionSearch, err)
+	}
+
+	if len(txns) == 0 {
+		return nil, fmt.Errorf("%s: %s", errNoTransactionFound, id)
+	}
+
+	if len(txns) > 1 {
+		return nil, fmt.Errorf("%s: %s", errMultipleTransactions, id)
+	}
+
+	return &model.TransactionResponse{
+		CurrentRound: round,
+		Transaction:  helper.InternalTransactionToModel(txns[0]),
+	}, nil
 }
 
-func (r *queryResolver) Transactions(ctx context.Context, address *string, addressRole *model.AddressRole, afterTime *string, applicationID *uint64, assetID *uint64, beforeTime *string, currencyGreaterThan *uint64, currencyLessThan *uint64, excludeCloseTo *bool, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix *string, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, txid *string) (*model.TransactionsResponse, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) Transactions(ctx context.Context, address *string, addressRole *model.AddressRole, afterTime *time.Time, applicationID *uint64, assetID *uint64, beforeTime *time.Time, currencyGreaterThan *uint64, currencyLessThan *uint64, excludeCloseTo *bool, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix []byte, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, id *string) (*model.TransactionsResponse, error) {
+	var notePrefixStr *string
+	if notePrefix != nil {
+		b64 := base64.StdEncoding.EncodeToString(notePrefix)
+		notePrefixStr = &b64
+	}
+	p := generated.SearchForTransactionsParams{
+		Limit:               limit,
+		Next:                next,
+		NotePrefix:          notePrefixStr,
+		TxType:              helper.ModalTxTypeToInternal(txType),
+		SigType:             helper.ModalSigTypeToInternal(sigType),
+		Txid:                id,
+		Round:               round,
+		MinRound:            minRound,
+		MaxRound:            maxRound,
+		AssetId:             assetID,
+		BeforeTime:          beforeTime,
+		AfterTime:           afterTime,
+		CurrencyGreaterThan: currencyGreaterThan,
+		CurrencyLessThan:    currencyLessThan,
+		Address:             address,
+		AddressRole:         helper.ModalAddressRoleToInternal(addressRole),
+		ExcludeCloseTo:      excludeCloseTo,
+		RekeyTo:             rekeyTo,
+		ApplicationId:       applicationID,
+	}
+	filter, err := transactionParamsToTransactionFilter(p)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch the transactions
+	txns, nextToken, currentRound, err := r.si.fetchTransactions(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %v", errTransactionSearch, err)
+	}
+
+	return &model.TransactionsResponse{
+		CurrentRound: currentRound,
+		NextToken:    strPtr(nextToken),
+		Transactions: helper.InternalTransactionsToModel(&txns),
+	}, nil
 }
 
 // Query returns graphGenerated.QueryResolver implementation.

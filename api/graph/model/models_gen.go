@@ -66,7 +66,7 @@ type Account struct {
 	// * Offline - indicates that the associated account is delegated.
 	// *  Online  - indicates that the associated account used as part of the delegation pool.
 	// *   NotParticipating - indicates that the associated account is neither a delegator nor a delegate.
-	Status string `json:"status"`
+	Status AccountStatus `json:"status"`
 }
 
 // AccountParticipation describes the parameters used by this account in consensus protocol.
@@ -100,14 +100,6 @@ type AccountStateDelta struct {
 	Delta []EvalDeltaKeyValue `json:"delta"`
 }
 
-type AccountTransactionsResponse struct {
-	// Round at which the results were computed.
-	CurrentRound uint64 `json:"currentRound"`
-	// Used for pagination, when making another request provide this token with the next parameter.
-	NextToken    *string       `json:"nextToken"`
-	Transactions []Transaction `json:"transactions"`
-}
-
 type AccountsResponse struct {
 	Accounts []Account `json:"accounts"`
 	// Round at which the results were computed.
@@ -125,7 +117,7 @@ type Application struct {
 	// Round when this application was deleted.
 	DeletedAtRound *uint64 `json:"deletedAtRound"`
 	// \[appidx\] application index.
-	ID uint64 `json:"ID"`
+	ID uint64 `json:"id"`
 	// Stores the global information associated with an application.
 	Params *ApplicationParams `json:"params"`
 }
@@ -137,7 +129,7 @@ type ApplicationLocalState struct {
 	// Whether or not the application local state is currently deleted from its account.
 	Deleted bool `json:"deleted"`
 	// The application which this local state is for.
-	ID uint64 `json:"ID"`
+	ID uint64 `json:"id"`
 	// Represents a key-value store for use in an application.
 	KeyValue []TealKeyValue `json:"keyValue"`
 	// Round when the account opted into the application.
@@ -196,7 +188,7 @@ type Asset struct {
 	// Round during which this asset was destroyed.
 	DestroyedAtRound *uint64 `json:"destroyedAtRound"`
 	// unique asset identifier
-	ID uint64 `json:"ID"`
+	ID uint64 `json:"id"`
 	// AssetParams specifies the parameters for an asset.
 	//
 	// \[apar\] when part of an AssetConfig transaction.
@@ -222,7 +214,7 @@ type AssetHolding struct {
 	// \[a\] number of units held.
 	Amount uint64 `json:"amount"`
 	// Asset ID of the holding.
-	ID uint64 `json:"ID"`
+	ID uint64 `json:"id"`
 	// Address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
 	Creator string `json:"creator"`
 	// Whether or not the asset holding is currently deleted from its account.
@@ -275,14 +267,6 @@ type AssetResponse struct {
 	CurrentRound uint64 `json:"currentRound"`
 }
 
-type AssetTransactionsResponse struct {
-	// Round at which the results were computed.
-	CurrentRound uint64 `json:"currentRound"`
-	// Used for pagination, when making another request provide this token with the next parameter.
-	NextToken    *string       `json:"nextToken"`
-	Transactions []Transaction `json:"transactions"`
-}
-
 type AssetsResponse struct {
 	Assets []Asset `json:"assets"`
 	// Round at which the results were computed.
@@ -297,23 +281,23 @@ type AssetsResponse struct {
 // data/bookkeeping/block.go : Block
 type Block struct {
 	// \[gh\] hash to which this block belongs.
-	GenesisHash string `json:"genesisHash"`
+	GenesisHash []byte `json:"genesisHash"`
 	// \[gen\] ID to which this block belongs.
 	GenesisID string `json:"genesisId"`
 	// \[prev\] Previous block hash.
-	PreviousBlockHash string `json:"previousBlockHash"`
+	PreviousBlockHash []byte `json:"previousBlockHash"`
 	// Fields relating to rewards,
 	Rewards *BlockRewards `json:"rewards"`
 	// \[rnd\] Current round on which this block was appended to the chain.
 	Round uint64 `json:"round"`
 	// \[seed\] Sortition seed.
-	Seed string `json:"seed"`
+	Seed []byte `json:"seed"`
 	// \[ts\] Block creation timestamp in seconds since eposh
 	Timestamp uint64 `json:"timestamp"`
 	// \[txns\] list of transactions corresponding to a given round.
 	Transactions []Transaction `json:"transactions"`
 	// \[txn\] TransactionsRoot authenticates the set of transactions appearing in the block. More specifically, it's the root of a merkle tree whose leaves are the block's Txids, in lexicographic order. For the empty block, it's 0. Note that the TxnRoot does not authenticate the signatures on the transactions, only the transactions themselves. Two blocks with the same transactions but in a different order and with different signatures will have the same TxnRoot.
-	TransactionsRoot string `json:"transactionsRoot"`
+	TransactionsRoot []byte `json:"transactionsRoot"`
 	// \[tc\] TxnCounter counts the number of transactions committed in the ledger, from the time at which support for this feature was introduced.
 	//
 	// Specifically, TxnCounter is the number of the next transaction that will be committed after this block.  It is 0 when no transactions have ever been committed (since TxnCounter started being supported).
@@ -369,14 +353,14 @@ type EvalDelta struct {
 	// \[at\] delta action.
 	Action uint64 `json:"action"`
 	// \[bs\] bytes value.
-	Bytes *string `json:"bytes"`
+	Bytes []byte `json:"bytes"`
 	// \[ui\] uint value.
 	Uint *uint64 `json:"uint"`
 }
 
 // Key-value pairs for StateDelta.
 type EvalDeltaKeyValue struct {
-	Key string `json:"key"`
+	Key []byte `json:"key"`
 	// Represents a TEAL value delta.
 	Value *EvalDelta `json:"value"`
 }
@@ -396,8 +380,8 @@ type MiniAssetHolding struct {
 	Address string `json:"address"`
 	Amount  uint64 `json:"amount"`
 	// Whether or not this asset holding is currently deleted from its account.
-	Deleted *bool `json:"deleted"`
-	Frozen  bool  `json:"frozen"`
+	Deleted bool `json:"deleted"`
+	Frozen  bool `json:"frozen"`
 	// Round during which the account opted into the asset.
 	OptedInAtRound *uint64 `json:"optedInAtRound"`
 	// Round during which the account opted out of the asset.
@@ -468,21 +452,21 @@ type Transaction struct {
 	// Round when the transaction was confirmed.
 	ConfirmedRound *uint64 `json:"confirmedRound"`
 	// Specifies an application index (ID) if an application was created with this transaction.
-	CreatedApplicationIndex *uint64 `json:"createdApplicationIndex"`
+	CreatedApplicationID *uint64 `json:"createdApplicationId"`
 	// Specifies an asset index (ID) if an asset was created with this transaction.
-	CreatedAssetIndex *uint64 `json:"createdAssetIndex"`
+	CreatedAssetID *uint64 `json:"createdAssetId"`
 	// \[fee\] Transaction fee.
 	Fee uint64 `json:"fee"`
 	// \[fv\] First valid round for this transaction.
 	FirstValid uint64 `json:"firstValid"`
 	// \[gh\] Hash of genesis block.
-	GenesisHash *string `json:"genesisHash"`
+	GenesisHash []byte `json:"genesisHash"`
 	// \[gen\] genesis block ID.
 	GenesisID *string `json:"genesisId"`
 	// Application state delta.
 	GlobalStateDelta []EvalDeltaKeyValue `json:"globalStateDelta"`
 	// \[grp\] Base64 encoded byte array of a sha512/256 digest. When present indicates that this transaction is part of a transaction group and the value is the sha512/256 hash of the transactions in that group.
-	Group *string `json:"group"`
+	Group []byte `json:"group"`
 	// Transaction ID
 	ID string `json:"id"`
 	// Offset into the round where this transaction was confirmed.
@@ -495,11 +479,11 @@ type Transaction struct {
 	// \[lv\] Last valid round for this transaction.
 	LastValid uint64 `json:"lastValid"`
 	// \[lx\] Base64 encoded 32-byte array. Lease enforces mutual exclusion of transactions.  If this field is nonzero, then once the transaction is confirmed, it acquires the lease identified by the (Sender, Lease) pair of the transaction until the LastValid round passes.  While this transaction possesses the lease, no other transaction specifying this lease can be confirmed.
-	Lease *string `json:"lease"`
+	Lease []byte `json:"lease"`
 	// \[ld\] Local state key/value changes for the application being executed by this transaction.
 	LocalStateDelta []AccountStateDelta `json:"localStateDelta"`
 	// \[note\] Free form data.
-	Note *string `json:"note"`
+	Note []byte `json:"note"`
 	// Fields for a payment transaction.
 	//
 	// Definition:
@@ -537,19 +521,19 @@ type TransactionApplication struct {
 	// \[apat\] List of accounts in addition to the sender that may be accessed from the application's approval-program and clear-state-program.
 	Accounts []string `json:"accounts"`
 	// \[apaa\] transaction specific arguments accessed from the application's approval-program and clear-state-program.
-	ApplicationArgs []string `json:"applicationArgs"`
+	ApplicationArgs [][]byte `json:"applicationArgs"`
 	// \[apid\] ID of the application being configured or empty if creating.
 	ApplicationID uint64 `json:"applicationId"`
 	// \[apap\] Logic executed for every application transaction, except when on-completion is set to "clear". It can read and write global state for the application, as well as account-specific local state. Approval programs may reject the transaction.
-	ApprovalProgram *string `json:"approvalProgram"`
+	ApprovalProgram []byte `json:"approvalProgram"`
 	// \[apsu\] Logic executed for application transactions with on-completion set to "clear". It can read and write global state for the application, as well as account-specific local state. Clear state programs cannot reject the transaction.
-	ClearStateProgram *string `json:"clearStateProgram"`
+	ClearStateProgram []byte `json:"clearStateProgram"`
 	// \[epp\] specifies the additional app program len requested in pages.
 	ExtraProgramPages *uint64 `json:"extraProgramPages"`
 	// \[apfa\] Lists the applications in addition to the application-id whose global states may be accessed by this application's approval-program and clear-state-program. The access is read-only.
-	ForeignApps []*uint64 `json:"foreignApps"`
+	ForeignApps []uint64 `json:"foreignApps"`
 	// \[apas\] lists the assets whose parameters may be accessed by this application's ApprovalProgram and ClearStateProgram. The access is read-only.
-	ForeignAssets []*uint64 `json:"foreignAssets"`
+	ForeignAssets []uint64 `json:"foreignAssets"`
 	// Represents a \[apls\] local-state or \[apgs\] global-state schema. These schemas determine how much storage may be used in a local-state or global-state for an application. The more space used, the larger minimum balance must be maintained in the account holding the data.
 	GlobalStateSchema *StateSchema `json:"globalStateSchema"`
 	// Represents a \[apls\] local-state or \[apgs\] global-state schema. These schemas determine how much storage may be used in a local-state or global-state for an application. The more space used, the larger minimum balance must be maintained in the account holding the data.
@@ -625,9 +609,9 @@ type TransactionAssetTransfer struct {
 // data/transactions/keyreg.go : KeyregTxnFields
 type TransactionKeyreg struct {
 	// \[nonpart\] Mark the account as participating or non-participating.
-	NonParticipation *bool `json:"nonParticipation"`
+	NonParticipation bool `json:"nonParticipation"`
 	// \[selkey\] Public key used with the Verified Random Function (VRF) result during committee selection.
-	SelectionParticipationKey *string `json:"selectionParticipationKey"`
+	SelectionParticipationKey []byte `json:"selectionParticipationKey"`
 	// \[votefst\] First round this participation key is valid.
 	VoteFirstValid *uint64 `json:"voteFirstValid"`
 	// \[votekd\] Number of subkeys in each batch of participation keys.
@@ -635,7 +619,7 @@ type TransactionKeyreg struct {
 	// \[votelst\] Last round this participation key is valid.
 	VoteLastValid *uint64 `json:"voteLastValid"`
 	// \[votekey\] Participation public key used in key registration transactions.
-	VoteParticipationKey *string `json:"voteParticipationKey"`
+	VoteParticipationKey []byte `json:"voteParticipationKey"`
 }
 
 // Fields for a payment transaction.
@@ -677,7 +661,7 @@ type TransactionSignature struct {
 	// crypto/multisig.go : MultisigSig
 	Multisig *TransactionSignatureMultisig `json:"multisig"`
 	// \[sig\] Standard ed25519 signature.
-	Sig *string `json:"sig"`
+	Sig []byte `json:"sig"`
 }
 
 // \[lsig\] Programatic transaction signature.
@@ -686,16 +670,16 @@ type TransactionSignature struct {
 // data/transactions/logicsig.go
 type TransactionSignatureLogicsig struct {
 	// \[arg\] Logic arguments, base64 encoded.
-	Args []string `json:"args"`
+	Args [][]byte `json:"args"`
 	// \[l\] Program signed by a signature or multi signature, or hashed to be the address of ana ccount. Base64 encoded TEAL program.
-	Logic string `json:"logic"`
+	Logic []byte `json:"logic"`
 	// \[msig\] structure holding multiple subsignatures.
 	//
 	// Definition:
 	// crypto/multisig.go : MultisigSig
 	MultisigSignature *TransactionSignatureMultisig `json:"multisigSignature"`
 	// \[sig\] ed25519 signature.
-	Signature *string `json:"signature"`
+	Signature []byte `json:"signature"`
 }
 
 // \[msig\] structure holding multiple subsignatures.
@@ -713,9 +697,9 @@ type TransactionSignatureMultisig struct {
 
 type TransactionSignatureMultisigSubsignature struct {
 	// \[pk\]
-	PublicKey *string `json:"publicKey"`
+	PublicKey []byte `json:"publicKey"`
 	// \[s\]
-	Signature *string `json:"signature"`
+	Signature []byte `json:"signature"`
 }
 
 type TransactionsResponse struct {
@@ -724,6 +708,49 @@ type TransactionsResponse struct {
 	// Used for pagination, when making another request provide this token with the next parameter.
 	NextToken    *string       `json:"nextToken"`
 	Transactions []Transaction `json:"transactions"`
+}
+
+type AccountStatus string
+
+const (
+	AccountStatusOffline          AccountStatus = "OFFLINE"
+	AccountStatusOnline           AccountStatus = "ONLINE"
+	AccountStatusNotParticipating AccountStatus = "NOT_PARTICIPATING"
+)
+
+var AllAccountStatus = []AccountStatus{
+	AccountStatusOffline,
+	AccountStatusOnline,
+	AccountStatusNotParticipating,
+}
+
+func (e AccountStatus) IsValid() bool {
+	switch e {
+	case AccountStatusOffline, AccountStatusOnline, AccountStatusNotParticipating:
+		return true
+	}
+	return false
+}
+
+func (e AccountStatus) String() string {
+	return string(e)
+}
+
+func (e *AccountStatus) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = AccountStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid AccountStatus", str)
+	}
+	return nil
+}
+
+func (e AccountStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 type AddressRole string

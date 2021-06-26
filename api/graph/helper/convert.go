@@ -3,28 +3,43 @@ package helper
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/algorand/indexer/api/generated/v2"
 	"github.com/algorand/indexer/api/graph/model"
 )
 
-func boolPtrOrDefault(p *bool) bool {
+func boolOrDefault(p *bool) bool {
 	if p == nil {
 		return false
 	}
 	return *p
 }
 
-func uint64PtrOrDefault(p *uint64) uint64 {
+func uint64OrDefault(p *uint64) uint64 {
 	if p == nil {
 		return 0
 	}
 	return *p
 }
 
-func byteslicePtrOrDefault(p *[]byte) []byte {
+func uint64SliceOrDefault(p *[]uint64) []uint64 {
+	if p == nil {
+		return []uint64{}
+	}
+	return *p
+}
+
+func byteSliceOrDefault(p *[]byte) []byte {
 	if p == nil {
 		return []byte{}
+	}
+	return *p
+}
+
+func stringSliceOrDefault(p *[]string) []string {
+	if p == nil {
+		return []string{}
 	}
 	return *p
 }
@@ -45,6 +60,112 @@ func InternalSigTypeToModel(sigType *string) *model.SigType {
 		result = model.SigTypeLsig
 	default:
 		panic(fmt.Errorf("Unexpected sig type: %s", *sigType))
+	}
+
+	return &result
+}
+
+func ModalSigTypeToInternal(sigType *model.SigType) *string {
+	if sigType == nil {
+		return nil
+	}
+
+	result := strings.ToLower(sigType.String())
+	return &result
+}
+
+func InternalAccountStatusToModel(status *string) *model.AccountStatus {
+	if status == nil {
+		return nil
+	}
+
+	var result model.AccountStatus
+
+	switch *status {
+	case "Offline":
+		result = model.AccountStatusOffline
+	case "Online":
+		result = model.AccountStatusOnline
+	case "NotParticipating":
+		result = model.AccountStatusNotParticipating
+	default:
+		panic(fmt.Errorf("Unexpected account status: %s", *status))
+	}
+
+	return &result
+}
+
+func InternalTxTypeToModel(txType *string) *model.TxType {
+	if txType == nil {
+		return nil
+	}
+
+	var result model.TxType
+
+	switch *txType {
+	case "pay":
+		result = model.TxTypePay
+	case "keyreg":
+		result = model.TxTypeKeyreg
+	case "acfg":
+		result = model.TxTypeAcfg
+	case "axfer":
+		result = model.TxTypeAxfer
+	case "afrz":
+		result = model.TxTypeAfrz
+	case "appl":
+		result = model.TxTypeAppl
+	default:
+		panic(fmt.Errorf("Unexpected transaction type: %s", *txType))
+	}
+
+	return &result
+}
+
+func ModalTxTypeToInternal(txType *model.TxType) *string {
+	if txType == nil {
+		return nil
+	}
+
+	result := strings.ToLower(txType.String())
+	return &result
+}
+
+func InternalOnCompletionToModel(oc generated.OnCompletion) model.OnCompletion {
+	switch oc {
+	case "noop":
+		return model.OnCompletionNoop
+	case "optin":
+		return model.OnCompletionOptin
+	case "closeout":
+		return model.OnCompletionCloseout
+	case "clear":
+		return model.OnCompletionClear
+	case "update":
+		return model.OnCompletionUpdate
+	case "delete":
+		return model.OnCompletionDelete
+	default:
+		panic(fmt.Errorf("Unexpected OnCompletion value: %s", oc))
+	}
+}
+
+func ModalAddressRoleToInternal(role *model.AddressRole) *string {
+	if role == nil {
+		return nil
+	}
+
+	var result string
+
+	switch *role {
+	case model.AddressRoleSender:
+		result = "sender"
+	case model.AddressRoleReceiver:
+		result = "receiver"
+	case model.AddressRoleFreezeTarget:
+		result = "freeze-target"
+	default:
+		panic(fmt.Errorf("Unexpected AddressRole value: %s", *role))
 	}
 
 	return &result
@@ -78,7 +199,7 @@ func InternalAccountToModel(account generated.Account) *model.Account {
 		Amount:                      account.Amount,
 		AmountWithoutPendingRewards: account.AmountWithoutPendingRewards,
 		AppsLocalState:              InternalApplicationLocalStatesToModel(account.AppsLocalState),
-		AppsTotalExtraPages:         uint64PtrOrDefault(account.AppsTotalExtraPages),
+		AppsTotalExtraPages:         uint64OrDefault(account.AppsTotalExtraPages),
 		AppsTotalSchema:             InternalApplicationStateSchemaToModel(account.AppsTotalSchema),
 		Assets:                      InternalAssetHoldingsToModel(account.Assets),
 		AuthAddr:                    account.AuthAddr,
@@ -86,14 +207,14 @@ func InternalAccountToModel(account generated.Account) *model.Account {
 		CreatedApps:                 InternalApplicationsToModel(account.CreatedApps),
 		CreatedAssets:               InternalAssetsToModel(account.CreatedAssets),
 		CreatedAtRound:              account.CreatedAtRound,
-		Deleted:                     boolPtrOrDefault(account.Deleted),
+		Deleted:                     boolOrDefault(account.Deleted),
 		Participation:               InternalAccountParticipationToModel(account.Participation),
 		PendingRewards:              account.PendingRewards,
 		RewardBase:                  account.RewardBase,
 		Rewards:                     account.Rewards,
 		Round:                       account.Round,
 		SigType:                     InternalSigTypeToModel(account.SigType),
-		Status:                      account.Status,
+		Status:                      *InternalAccountStatusToModel(&account.Status),
 	}
 }
 
@@ -158,7 +279,7 @@ func InternalApplicationLocalStatesToModel(localStates *[]generated.ApplicationL
 func InternalApplicationLocalStateToModel(localState generated.ApplicationLocalState) model.ApplicationLocalState {
 	return model.ApplicationLocalState{
 		ClosedOutAtRound: localState.ClosedOutAtRound,
-		Deleted:          boolPtrOrDefault(localState.Deleted),
+		Deleted:          boolOrDefault(localState.Deleted),
 		ID:               localState.Id,
 		KeyValue:         InternalTealKeyValueStoreToModel(localState.KeyValue),
 		OptedInAtRound:   localState.OptedInAtRound,
@@ -185,15 +306,15 @@ func InternalApplicationsToModel(apps *[]generated.Application) []model.Applicat
 
 	converted := make([]model.Application, len(*apps))
 	for i, app := range *apps {
-		converted[i] = InternalApplicationToModel(app)
+		converted[i] = *InternalApplicationToModel(app)
 	}
 	return converted
 }
 
-func InternalApplicationToModel(app generated.Application) model.Application {
-	return model.Application{
+func InternalApplicationToModel(app generated.Application) *model.Application {
+	return &model.Application{
 		CreatedAtRound: app.CreatedAtRound,
-		Deleted:        boolPtrOrDefault(app.Deleted),
+		Deleted:        boolOrDefault(app.Deleted),
 		DeletedAtRound: app.DeletedAtRound,
 		ID:             app.Id,
 		Params:         InternalApplicationParamsToModel(app.Params),
@@ -217,14 +338,41 @@ func InternalAssetHoldingToModel(holding generated.AssetHolding) model.AssetHold
 		Amount:          holding.Amount,
 		ID:              holding.AssetId,
 		Creator:         holding.Creator,
-		Deleted:         boolPtrOrDefault(holding.Deleted),
+		Deleted:         boolOrDefault(holding.Deleted),
 		Frozen:          holding.IsFrozen,
 		OptedInAtRound:  holding.OptedInAtRound,
 		OptedOutAtRound: holding.OptedOutAtRound,
 	}
 }
 
-func InternalAssetParamsToModel(params generated.AssetParams) *model.AssetParams {
+func InternalMiniAssetHoldingsToModel(holdings *[]generated.MiniAssetHolding) []model.MiniAssetHolding {
+	if holdings == nil {
+		return []model.MiniAssetHolding{}
+	}
+
+	converted := make([]model.MiniAssetHolding, len(*holdings))
+	for i, holding := range *holdings {
+		converted[i] = InternalMiniAssetHoldingToModel(holding)
+	}
+	return converted
+}
+
+func InternalMiniAssetHoldingToModel(holding generated.MiniAssetHolding) model.MiniAssetHolding {
+	return model.MiniAssetHolding{
+		Address:         holding.Address,
+		Amount:          holding.Amount,
+		Deleted:         boolOrDefault(holding.Deleted),
+		Frozen:          holding.IsFrozen,
+		OptedInAtRound:  holding.OptedInAtRound,
+		OptedOutAtRound: holding.OptedOutAtRound,
+	}
+}
+
+func InternalAssetParamsToModel(params *generated.AssetParams) *model.AssetParams {
+	if params == nil {
+		return nil
+	}
+
 	return &model.AssetParams{
 		Clawback:      params.Clawback,
 		Creator:       params.Creator,
@@ -232,7 +380,7 @@ func InternalAssetParamsToModel(params generated.AssetParams) *model.AssetParams
 		DefaultFrozen: params.DefaultFrozen,
 		Freeze:        params.Freeze,
 		Manager:       params.Manager,
-		MetadataHash:  byteslicePtrOrDefault(params.MetadataHash),
+		MetadataHash:  byteSliceOrDefault(params.MetadataHash),
 		Name:          params.Name,
 		Reserve:       params.Reserve,
 		Total:         params.Total,
@@ -248,17 +396,360 @@ func InternalAssetsToModel(assets *[]generated.Asset) []model.Asset {
 
 	converted := make([]model.Asset, len(*assets))
 	for i, asset := range *assets {
-		converted[i] = InternalAssetToModel(asset)
+		converted[i] = *InternalAssetToModel(asset)
 	}
 	return converted
 }
 
-func InternalAssetToModel(asset generated.Asset) model.Asset {
-	return model.Asset{
+func InternalAssetToModel(asset generated.Asset) *model.Asset {
+	return &model.Asset{
 		CreatedAtRound:   asset.CreatedAtRound,
-		Deleted:          boolPtrOrDefault(asset.Deleted),
+		Deleted:          boolOrDefault(asset.Deleted),
 		DestroyedAtRound: asset.DestroyedAtRound,
 		ID:               asset.Index,
-		Params:           InternalAssetParamsToModel(asset.Params),
+		Params:           InternalAssetParamsToModel(&asset.Params),
+	}
+}
+
+func InternalBlockRewardsToModel(rewards *generated.BlockRewards) *model.BlockRewards {
+	if rewards == nil {
+		return nil
+	}
+
+	return &model.BlockRewards{
+		FeeSink:                 rewards.FeeSink,
+		RewardsCalculationRound: rewards.RewardsCalculationRound,
+		RewardsLevel:            rewards.RewardsLevel,
+		RewardsPool:             rewards.RewardsPool,
+		RewardsRate:             rewards.RewardsRate,
+		RewardsResidue:          rewards.RewardsResidue,
+	}
+}
+
+func InternalBlockUpgradeStateToModel(state *generated.BlockUpgradeState) *model.BlockUpgradeState {
+	if state == nil {
+		return nil
+	}
+
+	return &model.BlockUpgradeState{
+		CurrentProtocol:        state.CurrentProtocol,
+		NextProtocol:           state.NextProtocol,
+		NextProtocolApprovals:  state.NextProtocolApprovals,
+		NextProtocolSwitchOn:   state.NextProtocolSwitchOn,
+		NextProtocolVoteBefore: state.NextProtocolVoteBefore,
+	}
+}
+
+func InternalBlockUpgradeVoteToModel(vote *generated.BlockUpgradeVote) *model.BlockUpgradeVote {
+	if vote == nil {
+		return nil
+	}
+
+	return &model.BlockUpgradeVote{
+		UpgradeApprove: vote.UpgradeApprove,
+		UpgradeDelay:   vote.UpgradeDelay,
+		UpgradePropose: vote.UpgradePropose,
+	}
+}
+
+func InternalBlockToModel(blk generated.Block) *model.Block {
+	return &model.Block{
+		GenesisHash:       blk.GenesisHash,
+		GenesisID:         blk.GenesisId,
+		PreviousBlockHash: blk.PreviousBlockHash,
+		Rewards:           InternalBlockRewardsToModel(blk.Rewards),
+		Round:             blk.Round,
+		Seed:              blk.Seed,
+		Timestamp:         blk.Timestamp,
+		Transactions:      InternalTransactionsToModel(blk.Transactions),
+		TransactionsRoot:  blk.TransactionsRoot,
+		TxnCounter:        blk.TxnCounter,
+		UpgradeState:      InternalBlockUpgradeStateToModel(blk.UpgradeState),
+		UpgradeVote:       InternalBlockUpgradeVoteToModel(blk.UpgradeVote),
+	}
+}
+
+func InternalTransactionsToModel(txns *[]generated.Transaction) []model.Transaction {
+	if txns == nil {
+		return []model.Transaction{}
+	}
+
+	converted := make([]model.Transaction, len(*txns))
+	for i, txn := range *txns {
+		converted[i] = *InternalTransactionToModel(txn)
+	}
+	return converted
+}
+
+func InternalTransactionToModel(txn generated.Transaction) *model.Transaction {
+	return &model.Transaction{
+		ApplicationTransaction:   InternalTransactionApplicationToModel(txn.ApplicationTransaction),
+		AssetConfigTransaction:   InternalTransactionAssetConfigToModel(txn.AssetConfigTransaction),
+		AssetFreezeTransaction:   InternalTransactionAssetFreezeToModel(txn.AssetFreezeTransaction),
+		AssetTransferTransaction: InternalTransactionAssetTransferToModel(txn.AssetTransferTransaction),
+		AuthAddr:                 txn.AuthAddr,
+		CloseRewards:             txn.CloseRewards,
+		ClosingAmount:            txn.ClosingAmount,
+		ConfirmedRound:           txn.ConfirmedRound,
+		CreatedApplicationID:     txn.CreatedApplicationIndex,
+		CreatedAssetID:           txn.CreatedAssetIndex,
+		Fee:                      txn.Fee,
+		FirstValid:               txn.FirstValid,
+		GenesisHash:              byteSliceOrDefault(txn.GenesisHash),
+		GenesisID:                txn.GenesisId,
+		GlobalStateDelta:         InternalEvalDeltaKeyValuesToModel(txn.GlobalStateDelta),
+		Group:                    byteSliceOrDefault(txn.Group),
+		ID:                       txn.Id,
+		IntraRoundOffset:         txn.IntraRoundOffset,
+		KeyregTransaction:        InternalTransactionKeyregToModel(txn.KeyregTransaction),
+		LastValid:                txn.LastValid,
+		Lease:                    byteSliceOrDefault(txn.Lease),
+		LocalStateDelta:          InternalAccountStateDeltasToModel(txn.LocalStateDelta),
+		Note:                     byteSliceOrDefault(txn.Note),
+		PaymentTransaction:       InternalTransactionPaymentToModel(txn.PaymentTransaction),
+		ReceiverRewards:          txn.ReceiverRewards,
+		RekeyTo:                  txn.RekeyTo,
+		RoundTime:                txn.RoundTime,
+		Sender:                   txn.Sender,
+		SenderRewards:            txn.SenderRewards,
+		Signature:                InternalTransactionSignatureToModel(&txn.Signature),
+		TxType:                   *InternalTxTypeToModel(&txn.TxType),
+	}
+}
+
+func InternalTransactionSignatureToModel(sig *generated.TransactionSignature) *model.TransactionSignature {
+	if sig == nil {
+		return nil
+	}
+
+	return &model.TransactionSignature{
+		Logicsig: nil,
+		Multisig: nil,
+		Sig:      byteSliceOrDefault(sig.Sig),
+	}
+}
+
+func InternalTransactionSignatureLogicsigToModel(lsig *generated.TransactionSignatureLogicsig) *model.TransactionSignatureLogicsig {
+	if lsig == nil {
+		return nil
+	}
+
+	var args [][]byte
+	if lsig.Args != nil {
+		args = make([][]byte, len(*lsig.Args))
+		for i, argStr := range *lsig.Args {
+			b64, err := base64.RawStdEncoding.DecodeString(argStr)
+			if err != nil {
+				panic(err)
+			}
+			args[i] = b64
+		}
+	}
+
+	return &model.TransactionSignatureLogicsig{
+		Args:              args,
+		Logic:             lsig.Logic,
+		MultisigSignature: InternalTransactionSignatureMultisigToModel(lsig.MultisigSignature),
+		Signature:         byteSliceOrDefault(lsig.Signature),
+	}
+}
+
+func InternalTransactionSignatureMultisigToModel(msig *generated.TransactionSignatureMultisig) *model.TransactionSignatureMultisig {
+	if msig == nil {
+		return nil
+	}
+
+	return &model.TransactionSignatureMultisig{
+		Subsignature: InternalTransactionSignatureMultisigSubsignaturesToModel(msig.Subsignature),
+		Threshold:    msig.Threshold,
+		Version:      msig.Version,
+	}
+}
+
+func InternalTransactionSignatureMultisigSubsignaturesToModel(subsigs *[]generated.TransactionSignatureMultisigSubsignature) []model.TransactionSignatureMultisigSubsignature {
+	if subsigs == nil {
+		return []model.TransactionSignatureMultisigSubsignature{}
+	}
+
+	converted := make([]model.TransactionSignatureMultisigSubsignature, len(*subsigs))
+	for i, subsig := range *subsigs {
+		converted[i] = InternalTransactionSignatureMultisigSubsignatureToModel(subsig)
+	}
+	return converted
+}
+
+func InternalTransactionSignatureMultisigSubsignatureToModel(subsig generated.TransactionSignatureMultisigSubsignature) model.TransactionSignatureMultisigSubsignature {
+	return model.TransactionSignatureMultisigSubsignature{
+		PublicKey: byteSliceOrDefault(subsig.PublicKey),
+		Signature: byteSliceOrDefault(subsig.Signature),
+	}
+}
+
+func InternalEvalDeltaKeyValuesToModel(deltas *generated.StateDelta) []model.EvalDeltaKeyValue {
+	if deltas == nil {
+		return []model.EvalDeltaKeyValue{}
+	}
+
+	converted := make([]model.EvalDeltaKeyValue, len(*deltas))
+	for i, delta := range *deltas {
+		converted[i] = InternalEvalDeltaKeyValueToModel(delta)
+	}
+	return converted
+}
+
+func InternalEvalDeltaKeyValueToModel(delta generated.EvalDeltaKeyValue) model.EvalDeltaKeyValue {
+	key, err := base64.RawStdEncoding.DecodeString(delta.Key)
+	if err != nil {
+		panic(err)
+	}
+
+	return model.EvalDeltaKeyValue{
+		Key:   key,
+		Value: InternalEvalDeltaToModel(delta.Value),
+	}
+}
+
+func InternalEvalDeltaToModel(delta generated.EvalDelta) *model.EvalDelta {
+	var bytes []byte
+	if delta.Bytes != nil {
+		var err error
+		bytes, err = base64.RawStdEncoding.DecodeString(*delta.Bytes)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return &model.EvalDelta{
+		Action: delta.Action,
+		Bytes:  bytes,
+		Uint:   delta.Uint,
+	}
+}
+
+func InternalAccountStateDeltasToModel(deltas *[]generated.AccountStateDelta) []model.AccountStateDelta {
+	if deltas == nil {
+		return []model.AccountStateDelta{}
+	}
+
+	converted := make([]model.AccountStateDelta, len(*deltas))
+	for i, delta := range *deltas {
+		converted[i] = InternalAccountStateDeltaToModel(delta)
+	}
+	return converted
+}
+
+func InternalAccountStateDeltaToModel(delta generated.AccountStateDelta) model.AccountStateDelta {
+	return model.AccountStateDelta{
+		Address: delta.Address,
+		Delta:   InternalEvalDeltaKeyValuesToModel(&delta.Delta),
+	}
+}
+
+func InternalTransactionPaymentToModel(txn *generated.TransactionPayment) *model.TransactionPayment {
+	if txn == nil {
+		return nil
+	}
+
+	return &model.TransactionPayment{
+		Amount:           txn.Amount,
+		CloseAmount:      txn.CloseAmount,
+		CloseRemainderTo: txn.CloseRemainderTo,
+		Receiver:         txn.Receiver,
+	}
+}
+
+func InternalTransactionKeyregToModel(txn *generated.TransactionKeyreg) *model.TransactionKeyreg {
+	if txn == nil {
+		return nil
+	}
+
+	return &model.TransactionKeyreg{
+		NonParticipation:          boolOrDefault(txn.NonParticipation),
+		SelectionParticipationKey: byteSliceOrDefault(txn.SelectionParticipationKey),
+		VoteFirstValid:            txn.VoteFirstValid,
+		VoteKeyDilution:           txn.VoteKeyDilution,
+		VoteLastValid:             txn.VoteLastValid,
+		VoteParticipationKey:      byteSliceOrDefault(txn.VoteParticipationKey),
+	}
+}
+
+func InternalTransactionAssetTransferToModel(txn *generated.TransactionAssetTransfer) *model.TransactionAssetTransfer {
+	if txn == nil {
+		return nil
+	}
+
+	return &model.TransactionAssetTransfer{
+		Amount:      txn.Amount,
+		AssetID:     txn.AssetId,
+		CloseAmount: txn.CloseAmount,
+		CloseTo:     txn.CloseTo,
+		Receiver:    txn.Receiver,
+		Sender:      txn.Sender,
+	}
+}
+
+func InternalTransactionAssetFreezeToModel(txn *generated.TransactionAssetFreeze) *model.TransactionAssetFreeze {
+	if txn == nil {
+		return nil
+	}
+
+	return &model.TransactionAssetFreeze{
+		Address:         txn.Address,
+		AssetID:         txn.AssetId,
+		NewFreezeStatus: txn.NewFreezeStatus,
+	}
+}
+
+func InternalTransactionAssetConfigToModel(txn *generated.TransactionAssetConfig) *model.TransactionAssetConfig {
+	if txn == nil {
+		return nil
+	}
+
+	return &model.TransactionAssetConfig{
+		AssetID: txn.AssetId,
+		Params:  InternalAssetParamsToModel(txn.Params),
+	}
+}
+
+func InternalTransactionApplicationToModel(txn *generated.TransactionApplication) *model.TransactionApplication {
+	if txn == nil {
+		return nil
+	}
+
+	var args [][]byte
+	if txn.ApplicationArgs != nil {
+		args = make([][]byte, len(*txn.ApplicationArgs))
+		for i, argStr := range *txn.ApplicationArgs {
+			b64, err := base64.RawStdEncoding.DecodeString(argStr)
+			if err != nil {
+				panic(err)
+			}
+			args[i] = b64
+		}
+	}
+
+	return &model.TransactionApplication{
+		Accounts:          stringSliceOrDefault(txn.Accounts),
+		ApplicationArgs:   args,
+		ApplicationID:     txn.ApplicationId,
+		ApprovalProgram:   byteSliceOrDefault(txn.ApprovalProgram),
+		ClearStateProgram: byteSliceOrDefault(txn.ClearStateProgram),
+		ExtraProgramPages: txn.ExtraProgramPages,
+		ForeignApps:       uint64SliceOrDefault(txn.ForeignApps),
+		ForeignAssets:     uint64SliceOrDefault(txn.ForeignAssets),
+		GlobalStateSchema: InternalStateSchemaToModel(txn.GlobalStateSchema),
+		LocalStateSchema:  InternalStateSchemaToModel(txn.LocalStateSchema),
+		OnCompletion:      InternalOnCompletionToModel(txn.OnCompletion),
+	}
+}
+
+func InternalStateSchemaToModel(schema *generated.StateSchema) *model.StateSchema {
+	if schema == nil {
+		return nil
+	}
+
+	return &model.StateSchema{
+		NumByteSlice: schema.NumByteSlice,
+		NumUint:      schema.NumUint,
 	}
 }

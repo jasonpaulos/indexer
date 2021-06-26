@@ -49,3 +49,9 @@ models:
   Bytes:
     model:
       - github.com/algorand/indexer/api/graph/model.Bytes
+  Address:
+    model:
+      - github.com/99designs/gqlgen/graphql.String
+  Time:
+    model:
+      - github.com/99designs/gqlgen/graphql.Time

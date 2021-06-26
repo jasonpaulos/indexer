@@ -1,9 +1,28 @@
 
+"""
+A 58-character base32 Algorand address. It includes the public key and checksum.
+"""
+scalar Address
+
+"""
+A 64-bit unsigned integer
+"""
 scalar Uint64
 
+"""
+A base64-encoded byte array
+"""
 scalar Bytes
 
+"""
+A JSON map with dynamic elements
+"""
 scalar Map
+
+"""
+An RFC 3339 formatted string representing a time
+"""
+scalar Time
 
 type Query {
   """
@@ -30,7 +49,7 @@ type Query {
   """
   account(
     """account string"""
-    address: String!
+    address: Address!
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -48,20 +67,20 @@ type Query {
   """
   accountTransactions(
     """account string"""
-    accountId: String!
+    account: Address!
 
     """
-    Include results after the given time. Must be an RFC 3339 formatted string.
+    Include results after the given time.
     """
-    afterTime: String
+    afterTime: Time
 
     """Asset ID"""
     assetId: Uint64
 
     """
-    Include results before the given time. Must be an RFC 3339 formatted string.
+    Include results before the given time.
     """
-    beforeTime: String
+    beforeTime: Time
 
     """
     Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
@@ -88,7 +107,7 @@ type Query {
     next: String
 
     """Specifies a prefix which must be contained in the note field."""
-    notePrefix: String
+    notePrefix: Bytes
 
     """Include results which include the rekey-to field."""
     rekeyTo: Boolean
@@ -106,8 +125,8 @@ type Query {
     txType: TxType
 
     """Lookup the specific transaction by ID."""
-    txid: String
-  ): AccountTransactionsResponse
+    id: String
+  ): TransactionsResponse
 
   """
   Search for accounts.
@@ -116,13 +135,13 @@ type Query {
   """
   accounts(
     """Application ID"""
-    applicationID: Uint64
+    applicationId: Uint64
 
     """Asset ID"""
-    assetID: Uint64
+    assetId: Uint64
 
     """Include accounts configured to use this spending key."""
-    authAddr: String
+    authAddr: Address
 
     """
     Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
@@ -159,7 +178,7 @@ type Query {
   Equivalent to GET /v2/applications/{application-id}
   """
   application(
-    applicationId: Uint64!
+    id: Uint64!
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -174,7 +193,7 @@ type Query {
   """
   applications(
     """Application ID"""
-    applicationId: Uint64
+    id: Uint64
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -196,7 +215,7 @@ type Query {
   Equivalent to GET /v2/assets/{asset-id}
   """
   asset(
-    assetId: Uint64!
+    id: Uint64!
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -248,7 +267,7 @@ type Query {
     """
     Only include transactions with this address in one of the transaction fields.
     """
-    address: String
+    address: Address
 
     """
     Combine with the address parameter to define what type of address to search for.
@@ -256,15 +275,15 @@ type Query {
     addressRole: AddressRole
 
     """
-    Include results after the given time. Must be an RFC 3339 formatted string.
+    Include results after the given time.
     """
-    afterTime: String
+    afterTime: Time
     assetId: Uint64!
 
     """
-    Include results before the given time. Must be an RFC 3339 formatted string.
+    Include results before the given time.
     """
-    beforeTime: String
+    beforeTime: Time
 
     """
     Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
@@ -296,7 +315,7 @@ type Query {
     next: String
 
     """Specifies a prefix which must be contained in the note field."""
-    notePrefix: String
+    notePrefix: Bytes
 
     """Include results which include the rekey-to field."""
     rekeyTo: Boolean
@@ -314,8 +333,8 @@ type Query {
     txType: TxType
 
     """Lookup the specific transaction by ID."""
-    txid: String
-  ): AssetTransactionsResponse
+    id: String
+  ): TransactionsResponse
 
   """
   Search for assets.
@@ -324,10 +343,10 @@ type Query {
   """
   assets(
     """Asset ID"""
-    assetId: Uint64
+    id: Uint64
 
     """Filter just assets with the given creator address."""
-    creator: String
+    creator: Address
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -354,7 +373,7 @@ type Query {
   
   Equivalent to GET /v2/transactions/{txid}
   """
-  transaction(txid: String!): TransactionResponse
+  transaction(id: String!): TransactionResponse
 
   """
   Search for transactions.
@@ -365,7 +384,7 @@ type Query {
     """
     Only include transactions with this address in one of the transaction fields.
     """
-    address: String
+    address: Address
 
     """
     Combine with the address parameter to define what type of address to search for.
@@ -373,9 +392,9 @@ type Query {
     addressRole: AddressRole
 
     """
-    Include results after the given time. Must be an RFC 3339 formatted string.
+    Include results after the given time.
     """
-    afterTime: String
+    afterTime: Time
 
     """Application ID"""
     applicationId: Uint64
@@ -384,9 +403,9 @@ type Query {
     assetId: Uint64
 
     """
-    Include results before the given time. Must be an RFC 3339 formatted string.
+    Include results before the given time.
     """
-    beforeTime: String
+    beforeTime: Time
 
     """
     Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
@@ -418,7 +437,7 @@ type Query {
     next: String
 
     """Specifies a prefix which must be contained in the note field."""
-    notePrefix: String
+    notePrefix: Bytes
 
     """Include results which include the rekey-to field."""
     rekeyTo: Boolean
@@ -436,7 +455,7 @@ type Query {
     txType: TxType
 
     """Lookup the specific transaction by ID."""
-    txid: String
+    id: String
   ): TransactionsResponse
 }
 
@@ -448,13 +467,13 @@ data/bookkeeping/block.go : Block
 """
 type Block {
   """\[gh\] hash to which this block belongs."""
-  genesisHash: String!
+  genesisHash: Bytes!
 
   """\[gen\] ID to which this block belongs."""
   genesisId: String!
 
   """\[prev\] Previous block hash."""
-  previousBlockHash: String!
+  previousBlockHash: Bytes!
 
   """Fields relating to rewards,"""
   rewards: BlockRewards
@@ -463,18 +482,18 @@ type Block {
   round: Uint64!
 
   """\[seed\] Sortition seed."""
-  seed: String!
+  seed: Bytes!
 
   """\[ts\] Block creation timestamp in seconds since eposh"""
   timestamp: Uint64!
 
   """\[txns\] list of transactions corresponding to a given round."""
-  transactions: [Transaction!]
+  transactions: [Transaction!]!
 
   """
   \[txn\] TransactionsRoot authenticates the set of transactions appearing in the block. More specifically, it's the root of a merkle tree whose leaves are the block's Txids, in lexicographic order. For the empty block, it's 0. Note that the TxnRoot does not authenticate the signatures on the transactions, only the transactions themselves. Two blocks with the same transactions but in a different order and with different signatures will have the same TxnRoot.
   """
-  transactionsRoot: String!
+  transactionsRoot: Bytes!
 
   """
   \[tc\] TxnCounter counts the number of transactions committed in the ledger, from the time at which support for this feature was introduced.
@@ -495,7 +514,7 @@ type BlockRewards {
   """
   \[fees\] accepts transaction fees, it can only spend to the incentive pool.
   """
-  feeSink: String!
+  feeSink: Address!
 
   """
   \[rwcalr\] number of leftover MicroAlgos after the distribution of rewards-rate MicroAlgos for every reward unit in the next round.
@@ -510,7 +529,7 @@ type BlockRewards {
   """
   \[rwd\] accepts periodic injections from the fee-sink and continually redistributes them as rewards.
   """
-  rewardsPool: String!
+  rewardsPool: Address!
 
   """
   \[rate\] Number of new MicroAlgos added to the participation stake from rewards at the next round.
@@ -571,7 +590,7 @@ type Transaction {
   """
   \[sgnr\] this is included with signed transactions when the signing address does not equal the sender. The backend can use this to ensure that auth addr is equal to the accounts auth addr.
   """
-  authAddr: String
+  authAddr: Address
 
   """\[rc\] rewards applied to close-remainder-to account."""
   closeRewards: Uint64
@@ -585,12 +604,12 @@ type Transaction {
   """
   Specifies an application index (ID) if an application was created with this transaction.
   """
-  createdApplicationIndex: Uint64
+  createdApplicationId: Uint64
 
   """
   Specifies an asset index (ID) if an asset was created with this transaction.
   """
-  createdAssetIndex: Uint64
+  createdAssetId: Uint64
 
   """\[fee\] Transaction fee."""
   fee: Uint64!
@@ -599,7 +618,7 @@ type Transaction {
   firstValid: Uint64!
 
   """\[gh\] Hash of genesis block."""
-  genesisHash: String
+  genesisHash: Bytes
 
   """\[gen\] genesis block ID."""
   genesisId: String
@@ -610,7 +629,7 @@ type Transaction {
   """
   \[grp\] Base64 encoded byte array of a sha512/256 digest. When present indicates that this transaction is part of a transaction group and the value is the sha512/256 hash of the transactions in that group.
   """
-  group: String
+  group: Bytes
 
   """Transaction ID"""
   id: String!
@@ -632,7 +651,7 @@ type Transaction {
   """
   \[lx\] Base64 encoded 32-byte array. Lease enforces mutual exclusion of transactions.  If this field is nonzero, then once the transaction is confirmed, it acquires the lease identified by the (Sender, Lease) pair of the transaction until the LastValid round passes.  While this transaction possesses the lease, no other transaction specifying this lease can be confirmed.
   """
-  lease: String
+  lease: Bytes
 
   """
   \[ld\] Local state key/value changes for the application being executed by this transaction.
@@ -640,7 +659,7 @@ type Transaction {
   localStateDelta: [AccountStateDelta!]
 
   """\[note\] Free form data."""
-  note: String
+  note: Bytes
 
   """
   Fields for a payment transaction.
@@ -656,13 +675,13 @@ type Transaction {
   """
   \[rekey\] when included in a valid transaction, the accounts auth addr will be updated with this value and future signatures must be signed with the key represented by this address.
   """
-  rekeyTo: String
+  rekeyTo: Address
 
   """Time when the block this transaction is in was confirmed."""
   roundTime: Uint64
 
   """\[snd\] Sender's address."""
-  sender: String!
+  sender: Address!
 
   """\[rs\] rewards applied to sender account."""
   senderRewards: Uint64
@@ -696,12 +715,12 @@ type TransactionApplication {
   """
   \[apat\] List of accounts in addition to the sender that may be accessed from the application's approval-program and clear-state-program.
   """
-  accounts: [String!]
+  accounts: [Address!]!
 
   """
   \[apaa\] transaction specific arguments accessed from the application's approval-program and clear-state-program.
   """
-  applicationArgs: [String!]
+  applicationArgs: [Bytes!]!
 
   """\[apid\] ID of the application being configured or empty if creating."""
   applicationId: Uint64!
@@ -709,12 +728,12 @@ type TransactionApplication {
   """
   \[apap\] Logic executed for every application transaction, except when on-completion is set to "clear". It can read and write global state for the application, as well as account-specific local state. Approval programs may reject the transaction.
   """
-  approvalProgram: String
+  approvalProgram: Bytes
 
   """
   \[apsu\] Logic executed for application transactions with on-completion set to "clear". It can read and write global state for the application, as well as account-specific local state. Clear state programs cannot reject the transaction.
   """
-  clearStateProgram: String
+  clearStateProgram: Bytes
 
   """\[epp\] specifies the additional app program len requested in pages."""
   extraProgramPages: Uint64
@@ -722,12 +741,12 @@ type TransactionApplication {
   """
   \[apfa\] Lists the applications in addition to the application-id whose global states may be accessed by this application's approval-program and clear-state-program. The access is read-only.
   """
-  foreignApps: [Uint64]
+  foreignApps: [Uint64!]!
 
   """
   \[apas\] lists the assets whose parameters may be accessed by this application's ApprovalProgram and ClearStateProgram. The access is read-only.
   """
-  foreignAssets: [Uint64]
+  foreignAssets: [Uint64!]!
 
   """
   Represents a \[apls\] local-state or \[apgs\] global-state schema. These schemas determine how much storage may be used in a local-state or global-state for an application. The more space used, the larger minimum balance must be maintained in the account holding the data.
@@ -815,12 +834,12 @@ type AssetParams {
   """
   \[c\] Address of account used to clawback holdings of this asset.  If empty, clawback is not permitted.
   """
-  clawback: String
+  clawback: Address
 
   """
   The address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
   """
-  creator: String!
+  creator: Address!
 
   """
   \[dc\] The number of digits to use after the decimal point when displaying this asset. If 0, the asset is not divisible. If 1, the base unit of the asset is in tenths. If 2, the base unit of the asset is in hundredths, and so on. This value must be between 0 and 19 (inclusive).
@@ -833,12 +852,12 @@ type AssetParams {
   """
   \[f\] Address of account used to freeze holdings of this asset.  If empty, freezing is not permitted.
   """
-  freeze: String
+  freeze: Address
 
   """
   \[m\] Address of account used to manage the keys of this asset and to destroy it.
   """
-  manager: String
+  manager: Address
 
   """
   \[am\] A commitment to some unspecified asset metadata. The format of this metadata is up to the application.
@@ -851,7 +870,7 @@ type AssetParams {
   """
   \[r\] Address of account holding reserve (non-minted) units of this asset.
   """
-  reserve: String
+  reserve: Address
 
   """\[t\] The total number of units of this asset."""
   total: Uint64!
@@ -871,7 +890,7 @@ data/transactions/asset.go : AssetFreezeTxnFields
 """
 type TransactionAssetFreeze {
   """\[fadd\] Address of the account whose asset is being frozen or thawed."""
-  address: String!
+  address: Address!
 
   """\[faid\] ID of the asset being frozen or thawed."""
   assetId: Uint64!
@@ -903,20 +922,20 @@ type TransactionAssetTransfer {
   """
   \[aclose\] Indicates that the asset should be removed from the account's Assets map, and specifies where the remaining asset holdings should be transferred.  It's always valid to transfer remaining asset holdings to the creator account.
   """
-  closeTo: String
+  closeTo: Address
 
   """\[arcv\] Recipient address of the transfer."""
-  receiver: String!
+  receiver: Address!
 
   """
   \[asnd\] The effective sender during a clawback transactions. If this is not a zero value, the real transaction sender must be the Clawback address from the AssetParams.
   """
-  sender: String
+  sender: Address
 }
 
 """Key-value pairs for StateDelta."""
 type EvalDeltaKeyValue {
-  key: String!
+  key: Bytes!
 
   """Represents a TEAL value delta."""
   value: EvalDelta!
@@ -928,7 +947,7 @@ type EvalDelta {
   action: Uint64!
 
   """\[bs\] bytes value."""
-  bytes: String
+  bytes: Bytes
 
   """\[ui\] uint value."""
   uint: Uint64
@@ -942,12 +961,12 @@ data/transactions/keyreg.go : KeyregTxnFields
 """
 type TransactionKeyreg {
   """\[nonpart\] Mark the account as participating or non-participating."""
-  nonParticipation: Boolean
+  nonParticipation: Boolean!
 
   """
   \[selkey\] Public key used with the Verified Random Function (VRF) result during committee selection.
   """
-  selectionParticipationKey: String
+  selectionParticipationKey: Bytes
 
   """\[votefst\] First round this participation key is valid."""
   voteFirstValid: Uint64
@@ -961,12 +980,12 @@ type TransactionKeyreg {
   """
   \[votekey\] Participation public key used in key registration transactions.
   """
-  voteParticipationKey: String
+  voteParticipationKey: Bytes
 }
 
 """Application state delta."""
 type AccountStateDelta {
-  address: String!
+  address: Address!
 
   """Application state delta."""
   delta: [EvalDeltaKeyValue!]!
@@ -990,10 +1009,10 @@ type TransactionPayment {
   """
   \[close\] when set, indicates that the sending account should be closed and all remaining funds be transferred to this address.
   """
-  closeRemainderTo: String
+  closeRemainderTo: Address
 
   """\[rcv\] receiver's address."""
-  receiver: String!
+  receiver: Address!
 }
 
 """
@@ -1017,7 +1036,7 @@ type TransactionSignature {
   multisig: TransactionSignatureMultisig
 
   """\[sig\] Standard ed25519 signature."""
-  sig: String
+  sig: Bytes
 }
 
 """
@@ -1028,12 +1047,12 @@ data/transactions/logicsig.go
 """
 type TransactionSignatureLogicsig {
   """\[arg\] Logic arguments, base64 encoded."""
-  args: [String!]
+  args: [Bytes!]!
 
   """
   \[l\] Program signed by a signature or multi signature, or hashed to be the address of ana ccount. Base64 encoded TEAL program.
   """
-  logic: String!
+  logic: Bytes!
 
   """
   \[msig\] structure holding multiple subsignatures.
@@ -1044,7 +1063,7 @@ type TransactionSignatureLogicsig {
   multisigSignature: TransactionSignatureMultisig
 
   """\[sig\] ed25519 signature."""
-  signature: String
+  signature: Bytes
 }
 
 """
@@ -1066,10 +1085,10 @@ type TransactionSignatureMultisig {
 
 type TransactionSignatureMultisigSubsignature {
   """\[pk\]"""
-  publicKey: String
+  publicKey: Bytes
 
   """\[s\]"""
-  signature: String
+  signature: Bytes
 }
 
 enum TxType {
@@ -1146,7 +1165,7 @@ data/basics/userBalance.go : AccountData
 """
 type Account {
   """the account public key"""
-  address: String!
+  address: Address!
 
   """\[algo\] total number of MicroAlgos in the account"""
   amount: Uint64!
@@ -1181,7 +1200,7 @@ type Account {
   """
   \[spend\] the address against which signing should be checked. If empty, the address of the current account is used. This field can be updated in any transaction by setting the RekeyTo field.
   """
-  authAddr: String
+  authAddr: Address
 
   """Round during which this account was most recently closed."""
   closedAtRound: Uint64
@@ -1241,7 +1260,13 @@ type Account {
   *  Online  - indicates that the associated account used as part of the delegation pool.
   *   NotParticipating - indicates that the associated account is neither a delegator nor a delegate.
   """
-  status: String!
+  status: AccountStatus!
+}
+
+enum AccountStatus {
+  OFFLINE
+  ONLINE
+  NOT_PARTICIPATING
 }
 
 """Stores local state associated with an application."""
@@ -1255,7 +1280,7 @@ type ApplicationLocalState {
   deleted: Boolean!
 
   """The application which this local state is for."""
-  ID: Uint64!
+  id: Uint64!
 
   """Represents a key-value store for use in an application."""
   keyValue: [TealKeyValue!]
@@ -1307,12 +1332,12 @@ type AssetHolding {
   amount: Uint64!
 
   """Asset ID of the holding."""
-  ID: Uint64!
+  id: Uint64!
 
   """
   Address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
   """
-  creator: String!
+  creator: Address!
 
   """
   Whether or not the asset holding is currently deleted from its account.
@@ -1341,7 +1366,7 @@ type Application {
   deletedAtRound: Uint64
 
   """\[appidx\] application index."""
-  ID: Uint64!
+  id: Uint64!
 
   """Stores the global information associated with an application."""
   params: ApplicationParams!
@@ -1358,7 +1383,7 @@ type ApplicationParams {
   """
   The address that created this application. This is the address where the parameters and global state for this application can be found.
   """
-  creator: String
+  creator: Address
 
   """\[epp\] the amount of extra program pages available to this app."""
   extraProgramPages: Uint64
@@ -1385,7 +1410,7 @@ type Asset {
   destroyedAtRound: Uint64
 
   """unique asset identifier"""
-  ID: Uint64!
+  id: Uint64!
 
   """
   AssetParams specifies the parameters for an asset.
@@ -1426,17 +1451,6 @@ enum SigType {
   SIG
   MSIG
   LSIG
-}
-
-type AccountTransactionsResponse {
-  """Round at which the results were computed."""
-  currentRound: Uint64!
-
-  """
-  Used for pagination, when making another request provide this token with the next parameter.
-  """
-  nextToken: String
-  transactions: [Transaction!]!
 }
 
 type AccountsResponse {
@@ -1493,13 +1507,13 @@ type AssetBalancesResponse {
 
 """A simplified version of AssetHolding """
 type MiniAssetHolding {
-  address: String!
+  address: Address!
   amount: Uint64!
 
   """
   Whether or not this asset holding is currently deleted from its account.
   """
-  deleted: Boolean
+  deleted: Boolean!
   frozen: Boolean!
 
   """Round during which the account opted into the asset."""
@@ -1507,17 +1521,6 @@ type MiniAssetHolding {
 
   """Round during which the account opted out of the asset."""
   optedOutAtRound: Uint64
-}
-
-type AssetTransactionsResponse {
-  """Round at which the results were computed."""
-  currentRound: Uint64!
-
-  """
-  Used for pagination, when making another request provide this token with the next parameter.
-  """
-  nextToken: String
-  transactions: [Transaction!]!
 }
 
 enum AddressRole {

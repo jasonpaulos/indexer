@@ -8,6 +8,7 @@ import (
 	"errors"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -80,12 +81,6 @@ type ComplexityRoot struct {
 	AccountStateDelta struct {
 		Address func(childComplexity int) int
 		Delta   func(childComplexity int) int
-	}
-
-	AccountTransactionsResponse struct {
-		CurrentRound func(childComplexity int) int
-		NextToken    func(childComplexity int) int
-		Transactions func(childComplexity int) int
 	}
 
 	AccountsResponse struct {
@@ -181,12 +176,6 @@ type ComplexityRoot struct {
 		CurrentRound func(childComplexity int) int
 	}
 
-	AssetTransactionsResponse struct {
-		CurrentRound func(childComplexity int) int
-		NextToken    func(childComplexity int) int
-		Transactions func(childComplexity int) int
-	}
-
 	AssetsResponse struct {
 		Assets       func(childComplexity int) int
 		CurrentRound func(childComplexity int) int
@@ -262,18 +251,18 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Account             func(childComplexity int, address string, includeAll *bool, round *uint64) int
-		AccountTransactions func(childComplexity int, accountID string, afterTime *string, assetID *uint64, beforeTime *string, currencyGreaterThan *uint64, currencyLessThan *uint64, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix *string, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, txid *string) int
+		AccountTransactions func(childComplexity int, account string, afterTime *time.Time, assetID *uint64, beforeTime *time.Time, currencyGreaterThan *uint64, currencyLessThan *uint64, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix []byte, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, id *string) int
 		Accounts            func(childComplexity int, applicationID *uint64, assetID *uint64, authAddr *string, currencyGreaterThan *uint64, currencyLessThan *uint64, includeAll *bool, limit *uint64, next *string, round *uint64) int
-		Application         func(childComplexity int, applicationID uint64, includeAll *bool) int
-		Applications        func(childComplexity int, applicationID *uint64, includeAll *bool, limit *uint64, next *string) int
-		Asset               func(childComplexity int, assetID uint64, includeAll *bool) int
+		Application         func(childComplexity int, id uint64, includeAll *bool) int
+		Applications        func(childComplexity int, id *uint64, includeAll *bool, limit *uint64, next *string) int
+		Asset               func(childComplexity int, id uint64, includeAll *bool) int
 		AssetBalances       func(childComplexity int, assetID uint64, currencyGreaterThan *uint64, currencyLessThan *uint64, includeAll *bool, limit *uint64, next *string, round *uint64) int
-		AssetTransactions   func(childComplexity int, address *string, addressRole *model.AddressRole, afterTime *string, assetID uint64, beforeTime *string, currencyGreaterThan *uint64, currencyLessThan *uint64, excludeCloseTo *bool, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix *string, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, txid *string) int
-		Assets              func(childComplexity int, assetID *uint64, creator *string, includeAll *bool, limit *uint64, name *string, next *string, unit *string) int
+		AssetTransactions   func(childComplexity int, address *string, addressRole *model.AddressRole, afterTime *time.Time, assetID uint64, beforeTime *time.Time, currencyGreaterThan *uint64, currencyLessThan *uint64, excludeCloseTo *bool, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix []byte, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, id *string) int
+		Assets              func(childComplexity int, id *uint64, creator *string, includeAll *bool, limit *uint64, name *string, next *string, unit *string) int
 		Block               func(childComplexity int, roundNumber uint64) int
 		HealthCheck         func(childComplexity int) int
-		Transaction         func(childComplexity int, txid string) int
-		Transactions        func(childComplexity int, address *string, addressRole *model.AddressRole, afterTime *string, applicationID *uint64, assetID *uint64, beforeTime *string, currencyGreaterThan *uint64, currencyLessThan *uint64, excludeCloseTo *bool, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix *string, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, txid *string) int
+		Transaction         func(childComplexity int, id string) int
+		Transactions        func(childComplexity int, address *string, addressRole *model.AddressRole, afterTime *time.Time, applicationID *uint64, assetID *uint64, beforeTime *time.Time, currencyGreaterThan *uint64, currencyLessThan *uint64, excludeCloseTo *bool, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix []byte, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, id *string) int
 	}
 
 	StateSchema struct {
@@ -301,8 +290,8 @@ type ComplexityRoot struct {
 		CloseRewards             func(childComplexity int) int
 		ClosingAmount            func(childComplexity int) int
 		ConfirmedRound           func(childComplexity int) int
-		CreatedApplicationIndex  func(childComplexity int) int
-		CreatedAssetIndex        func(childComplexity int) int
+		CreatedApplicationID     func(childComplexity int) int
+		CreatedAssetID           func(childComplexity int) int
 		Fee                      func(childComplexity int) int
 		FirstValid               func(childComplexity int) int
 		GenesisHash              func(childComplexity int) int
@@ -416,16 +405,16 @@ type QueryResolver interface {
 	Block(ctx context.Context, roundNumber uint64) (*model.Block, error)
 	HealthCheck(ctx context.Context) (*model.HealthCheck, error)
 	Account(ctx context.Context, address string, includeAll *bool, round *uint64) (*model.AccountResponse, error)
-	AccountTransactions(ctx context.Context, accountID string, afterTime *string, assetID *uint64, beforeTime *string, currencyGreaterThan *uint64, currencyLessThan *uint64, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix *string, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, txid *string) (*model.AccountTransactionsResponse, error)
+	AccountTransactions(ctx context.Context, account string, afterTime *time.Time, assetID *uint64, beforeTime *time.Time, currencyGreaterThan *uint64, currencyLessThan *uint64, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix []byte, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, id *string) (*model.TransactionsResponse, error)
 	Accounts(ctx context.Context, applicationID *uint64, assetID *uint64, authAddr *string, currencyGreaterThan *uint64, currencyLessThan *uint64, includeAll *bool, limit *uint64, next *string, round *uint64) (*model.AccountsResponse, error)
-	Application(ctx context.Context, applicationID uint64, includeAll *bool) (*model.ApplicationResponse, error)
-	Applications(ctx context.Context, applicationID *uint64, includeAll *bool, limit *uint64, next *string) (*model.ApplicationsResponse, error)
-	Asset(ctx context.Context, assetID uint64, includeAll *bool) (*model.AssetResponse, error)
+	Application(ctx context.Context, id uint64, includeAll *bool) (*model.ApplicationResponse, error)
+	Applications(ctx context.Context, id *uint64, includeAll *bool, limit *uint64, next *string) (*model.ApplicationsResponse, error)
+	Asset(ctx context.Context, id uint64, includeAll *bool) (*model.AssetResponse, error)
 	AssetBalances(ctx context.Context, assetID uint64, currencyGreaterThan *uint64, currencyLessThan *uint64, includeAll *bool, limit *uint64, next *string, round *uint64) (*model.AssetBalancesResponse, error)
-	AssetTransactions(ctx context.Context, address *string, addressRole *model.AddressRole, afterTime *string, assetID uint64, beforeTime *string, currencyGreaterThan *uint64, currencyLessThan *uint64, excludeCloseTo *bool, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix *string, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, txid *string) (*model.AssetTransactionsResponse, error)
-	Assets(ctx context.Context, assetID *uint64, creator *string, includeAll *bool, limit *uint64, name *string, next *string, unit *string) (*model.AssetsResponse, error)
-	Transaction(ctx context.Context, txid string) (*model.TransactionResponse, error)
-	Transactions(ctx context.Context, address *string, addressRole *model.AddressRole, afterTime *string, applicationID *uint64, assetID *uint64, beforeTime *string, currencyGreaterThan *uint64, currencyLessThan *uint64, excludeCloseTo *bool, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix *string, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, txid *string) (*model.TransactionsResponse, error)
+	AssetTransactions(ctx context.Context, address *string, addressRole *model.AddressRole, afterTime *time.Time, assetID uint64, beforeTime *time.Time, currencyGreaterThan *uint64, currencyLessThan *uint64, excludeCloseTo *bool, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix []byte, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, id *string) (*model.TransactionsResponse, error)
+	Assets(ctx context.Context, id *uint64, creator *string, includeAll *bool, limit *uint64, name *string, next *string, unit *string) (*model.AssetsResponse, error)
+	Transaction(ctx context.Context, id string) (*model.TransactionResponse, error)
+	Transactions(ctx context.Context, address *string, addressRole *model.AddressRole, afterTime *time.Time, applicationID *uint64, assetID *uint64, beforeTime *time.Time, currencyGreaterThan *uint64, currencyLessThan *uint64, excludeCloseTo *bool, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix []byte, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, id *string) (*model.TransactionsResponse, error)
 }
 
 type executableSchema struct {
@@ -646,27 +635,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.AccountStateDelta.Delta(childComplexity), true
 
-	case "AccountTransactionsResponse.currentRound":
-		if e.complexity.AccountTransactionsResponse.CurrentRound == nil {
-			break
-		}
-
-		return e.complexity.AccountTransactionsResponse.CurrentRound(childComplexity), true
-
-	case "AccountTransactionsResponse.nextToken":
-		if e.complexity.AccountTransactionsResponse.NextToken == nil {
-			break
-		}
-
-		return e.complexity.AccountTransactionsResponse.NextToken(childComplexity), true
-
-	case "AccountTransactionsResponse.transactions":
-		if e.complexity.AccountTransactionsResponse.Transactions == nil {
-			break
-		}
-
-		return e.complexity.AccountTransactionsResponse.Transactions(childComplexity), true
-
 	case "AccountsResponse.accounts":
 		if e.complexity.AccountsResponse.Accounts == nil {
 			break
@@ -709,7 +677,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Application.DeletedAtRound(childComplexity), true
 
-	case "Application.ID":
+	case "Application.id":
 		if e.complexity.Application.ID == nil {
 			break
 		}
@@ -737,7 +705,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ApplicationLocalState.Deleted(childComplexity), true
 
-	case "ApplicationLocalState.ID":
+	case "ApplicationLocalState.id":
 		if e.complexity.ApplicationLocalState.ID == nil {
 			break
 		}
@@ -884,7 +852,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Asset.DestroyedAtRound(childComplexity), true
 
-	case "Asset.ID":
+	case "Asset.id":
 		if e.complexity.Asset.ID == nil {
 			break
 		}
@@ -947,7 +915,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.AssetHolding.Frozen(childComplexity), true
 
-	case "AssetHolding.ID":
+	case "AssetHolding.id":
 		if e.complexity.AssetHolding.ID == nil {
 			break
 		}
@@ -1065,27 +1033,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.AssetResponse.CurrentRound(childComplexity), true
-
-	case "AssetTransactionsResponse.currentRound":
-		if e.complexity.AssetTransactionsResponse.CurrentRound == nil {
-			break
-		}
-
-		return e.complexity.AssetTransactionsResponse.CurrentRound(childComplexity), true
-
-	case "AssetTransactionsResponse.nextToken":
-		if e.complexity.AssetTransactionsResponse.NextToken == nil {
-			break
-		}
-
-		return e.complexity.AssetTransactionsResponse.NextToken(childComplexity), true
-
-	case "AssetTransactionsResponse.transactions":
-		if e.complexity.AssetTransactionsResponse.Transactions == nil {
-			break
-		}
-
-		return e.complexity.AssetTransactionsResponse.Transactions(childComplexity), true
 
 	case "AssetsResponse.assets":
 		if e.complexity.AssetsResponse.Assets == nil {
@@ -1431,7 +1378,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.AccountTransactions(childComplexity, args["accountId"].(string), args["afterTime"].(*string), args["assetId"].(*uint64), args["beforeTime"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["limit"].(*uint64), args["maxRound"].(*uint64), args["minRound"].(*uint64), args["next"].(*string), args["notePrefix"].(*string), args["rekeyTo"].(*bool), args["round"].(*uint64), args["sigType"].(*model.SigType), args["txType"].(*model.TxType), args["txid"].(*string)), true
+		return e.complexity.Query.AccountTransactions(childComplexity, args["account"].(string), args["afterTime"].(*time.Time), args["assetId"].(*uint64), args["beforeTime"].(*time.Time), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["limit"].(*uint64), args["maxRound"].(*uint64), args["minRound"].(*uint64), args["next"].(*string), args["notePrefix"].([]byte), args["rekeyTo"].(*bool), args["round"].(*uint64), args["sigType"].(*model.SigType), args["txType"].(*model.TxType), args["id"].(*string)), true
 
 	case "Query.accounts":
 		if e.complexity.Query.Accounts == nil {
@@ -1443,7 +1390,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Accounts(childComplexity, args["applicationID"].(*uint64), args["assetID"].(*uint64), args["authAddr"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["includeAll"].(*bool), args["limit"].(*uint64), args["next"].(*string), args["round"].(*uint64)), true
+		return e.complexity.Query.Accounts(childComplexity, args["applicationId"].(*uint64), args["assetId"].(*uint64), args["authAddr"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["includeAll"].(*bool), args["limit"].(*uint64), args["next"].(*string), args["round"].(*uint64)), true
 
 	case "Query.application":
 		if e.complexity.Query.Application == nil {
@@ -1455,7 +1402,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Application(childComplexity, args["applicationId"].(uint64), args["includeAll"].(*bool)), true
+		return e.complexity.Query.Application(childComplexity, args["id"].(uint64), args["includeAll"].(*bool)), true
 
 	case "Query.applications":
 		if e.complexity.Query.Applications == nil {
@@ -1467,7 +1414,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Applications(childComplexity, args["applicationId"].(*uint64), args["includeAll"].(*bool), args["limit"].(*uint64), args["next"].(*string)), true
+		return e.complexity.Query.Applications(childComplexity, args["id"].(*uint64), args["includeAll"].(*bool), args["limit"].(*uint64), args["next"].(*string)), true
 
 	case "Query.asset":
 		if e.complexity.Query.Asset == nil {
@@ -1479,7 +1426,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Asset(childComplexity, args["assetId"].(uint64), args["includeAll"].(*bool)), true
+		return e.complexity.Query.Asset(childComplexity, args["id"].(uint64), args["includeAll"].(*bool)), true
 
 	case "Query.assetBalances":
 		if e.complexity.Query.AssetBalances == nil {
@@ -1503,7 +1450,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.AssetTransactions(childComplexity, args["address"].(*string), args["addressRole"].(*model.AddressRole), args["afterTime"].(*string), args["assetId"].(uint64), args["beforeTime"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["excludeCloseTo"].(*bool), args["limit"].(*uint64), args["maxRound"].(*uint64), args["minRound"].(*uint64), args["next"].(*string), args["notePrefix"].(*string), args["rekeyTo"].(*bool), args["round"].(*uint64), args["sigType"].(*model.SigType), args["txType"].(*model.TxType), args["txid"].(*string)), true
+		return e.complexity.Query.AssetTransactions(childComplexity, args["address"].(*string), args["addressRole"].(*model.AddressRole), args["afterTime"].(*time.Time), args["assetId"].(uint64), args["beforeTime"].(*time.Time), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["excludeCloseTo"].(*bool), args["limit"].(*uint64), args["maxRound"].(*uint64), args["minRound"].(*uint64), args["next"].(*string), args["notePrefix"].([]byte), args["rekeyTo"].(*bool), args["round"].(*uint64), args["sigType"].(*model.SigType), args["txType"].(*model.TxType), args["id"].(*string)), true
 
 	case "Query.assets":
 		if e.complexity.Query.Assets == nil {
@@ -1515,7 +1462,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Assets(childComplexity, args["assetId"].(*uint64), args["creator"].(*string), args["includeAll"].(*bool), args["limit"].(*uint64), args["name"].(*string), args["next"].(*string), args["unit"].(*string)), true
+		return e.complexity.Query.Assets(childComplexity, args["id"].(*uint64), args["creator"].(*string), args["includeAll"].(*bool), args["limit"].(*uint64), args["name"].(*string), args["next"].(*string), args["unit"].(*string)), true
 
 	case "Query.block":
 		if e.complexity.Query.Block == nil {
@@ -1546,7 +1493,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Transaction(childComplexity, args["txid"].(string)), true
+		return e.complexity.Query.Transaction(childComplexity, args["id"].(string)), true
 
 	case "Query.transactions":
 		if e.complexity.Query.Transactions == nil {
@@ -1558,7 +1505,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Transactions(childComplexity, args["address"].(*string), args["addressRole"].(*model.AddressRole), args["afterTime"].(*string), args["applicationId"].(*uint64), args["assetId"].(*uint64), args["beforeTime"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["excludeCloseTo"].(*bool), args["limit"].(*uint64), args["maxRound"].(*uint64), args["minRound"].(*uint64), args["next"].(*string), args["notePrefix"].(*string), args["rekeyTo"].(*bool), args["round"].(*uint64), args["sigType"].(*model.SigType), args["txType"].(*model.TxType), args["txid"].(*string)), true
+		return e.complexity.Query.Transactions(childComplexity, args["address"].(*string), args["addressRole"].(*model.AddressRole), args["afterTime"].(*time.Time), args["applicationId"].(*uint64), args["assetId"].(*uint64), args["beforeTime"].(*time.Time), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["excludeCloseTo"].(*bool), args["limit"].(*uint64), args["maxRound"].(*uint64), args["minRound"].(*uint64), args["next"].(*string), args["notePrefix"].([]byte), args["rekeyTo"].(*bool), args["round"].(*uint64), args["sigType"].(*model.SigType), args["txType"].(*model.TxType), args["id"].(*string)), true
 
 	case "StateSchema.numByteSlice":
 		if e.complexity.StateSchema.NumByteSlice == nil {
@@ -1665,19 +1612,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Transaction.ConfirmedRound(childComplexity), true
 
-	case "Transaction.createdApplicationIndex":
-		if e.complexity.Transaction.CreatedApplicationIndex == nil {
+	case "Transaction.createdApplicationId":
+		if e.complexity.Transaction.CreatedApplicationID == nil {
 			break
 		}
 
-		return e.complexity.Transaction.CreatedApplicationIndex(childComplexity), true
+		return e.complexity.Transaction.CreatedApplicationID(childComplexity), true
 
-	case "Transaction.createdAssetIndex":
-		if e.complexity.Transaction.CreatedAssetIndex == nil {
+	case "Transaction.createdAssetId":
+		if e.complexity.Transaction.CreatedAssetID == nil {
 			break
 		}
 
-		return e.complexity.Transaction.CreatedAssetIndex(childComplexity), true
+		return e.complexity.Transaction.CreatedAssetID(childComplexity), true
 
 	case "Transaction.fee":
 		if e.complexity.Transaction.Fee == nil {
@@ -2220,11 +2167,30 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 
 var sources = []*ast.Source{
 	{Name: "api/indexer.graphql", Input: `
+"""
+A 58-character base32 Algorand address. It includes the public key and checksum.
+"""
+scalar Address
+
+"""
+A 64-bit unsigned integer
+"""
 scalar Uint64
 
+"""
+A base64-encoded byte array
+"""
 scalar Bytes
 
+"""
+A JSON map with dynamic elements
+"""
 scalar Map
+
+"""
+An RFC 3339 formatted string representing a time
+"""
+scalar Time
 
 type Query {
   """
@@ -2251,7 +2217,7 @@ type Query {
   """
   account(
     """account string"""
-    address: String!
+    address: Address!
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -2269,20 +2235,20 @@ type Query {
   """
   accountTransactions(
     """account string"""
-    accountId: String!
+    account: Address!
 
     """
-    Include results after the given time. Must be an RFC 3339 formatted string.
+    Include results after the given time.
     """
-    afterTime: String
+    afterTime: Time
 
     """Asset ID"""
     assetId: Uint64
 
     """
-    Include results before the given time. Must be an RFC 3339 formatted string.
+    Include results before the given time.
     """
-    beforeTime: String
+    beforeTime: Time
 
     """
     Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
@@ -2309,7 +2275,7 @@ type Query {
     next: String
 
     """Specifies a prefix which must be contained in the note field."""
-    notePrefix: String
+    notePrefix: Bytes
 
     """Include results which include the rekey-to field."""
     rekeyTo: Boolean
@@ -2327,8 +2293,8 @@ type Query {
     txType: TxType
 
     """Lookup the specific transaction by ID."""
-    txid: String
-  ): AccountTransactionsResponse
+    id: String
+  ): TransactionsResponse
 
   """
   Search for accounts.
@@ -2337,13 +2303,13 @@ type Query {
   """
   accounts(
     """Application ID"""
-    applicationID: Uint64
+    applicationId: Uint64
 
     """Asset ID"""
-    assetID: Uint64
+    assetId: Uint64
 
     """Include accounts configured to use this spending key."""
-    authAddr: String
+    authAddr: Address
 
     """
     Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
@@ -2380,7 +2346,7 @@ type Query {
   Equivalent to GET /v2/applications/{application-id}
   """
   application(
-    applicationId: Uint64!
+    id: Uint64!
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -2395,7 +2361,7 @@ type Query {
   """
   applications(
     """Application ID"""
-    applicationId: Uint64
+    id: Uint64
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -2417,7 +2383,7 @@ type Query {
   Equivalent to GET /v2/assets/{asset-id}
   """
   asset(
-    assetId: Uint64!
+    id: Uint64!
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -2469,7 +2435,7 @@ type Query {
     """
     Only include transactions with this address in one of the transaction fields.
     """
-    address: String
+    address: Address
 
     """
     Combine with the address parameter to define what type of address to search for.
@@ -2477,15 +2443,15 @@ type Query {
     addressRole: AddressRole
 
     """
-    Include results after the given time. Must be an RFC 3339 formatted string.
+    Include results after the given time.
     """
-    afterTime: String
+    afterTime: Time
     assetId: Uint64!
 
     """
-    Include results before the given time. Must be an RFC 3339 formatted string.
+    Include results before the given time.
     """
-    beforeTime: String
+    beforeTime: Time
 
     """
     Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
@@ -2517,7 +2483,7 @@ type Query {
     next: String
 
     """Specifies a prefix which must be contained in the note field."""
-    notePrefix: String
+    notePrefix: Bytes
 
     """Include results which include the rekey-to field."""
     rekeyTo: Boolean
@@ -2535,8 +2501,8 @@ type Query {
     txType: TxType
 
     """Lookup the specific transaction by ID."""
-    txid: String
-  ): AssetTransactionsResponse
+    id: String
+  ): TransactionsResponse
 
   """
   Search for assets.
@@ -2545,10 +2511,10 @@ type Query {
   """
   assets(
     """Asset ID"""
-    assetId: Uint64
+    id: Uint64
 
     """Filter just assets with the given creator address."""
-    creator: String
+    creator: Address
 
     """
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
@@ -2575,7 +2541,7 @@ type Query {
   
   Equivalent to GET /v2/transactions/{txid}
   """
-  transaction(txid: String!): TransactionResponse
+  transaction(id: String!): TransactionResponse
 
   """
   Search for transactions.
@@ -2586,7 +2552,7 @@ type Query {
     """
     Only include transactions with this address in one of the transaction fields.
     """
-    address: String
+    address: Address
 
     """
     Combine with the address parameter to define what type of address to search for.
@@ -2594,9 +2560,9 @@ type Query {
     addressRole: AddressRole
 
     """
-    Include results after the given time. Must be an RFC 3339 formatted string.
+    Include results after the given time.
     """
-    afterTime: String
+    afterTime: Time
 
     """Application ID"""
     applicationId: Uint64
@@ -2605,9 +2571,9 @@ type Query {
     assetId: Uint64
 
     """
-    Include results before the given time. Must be an RFC 3339 formatted string.
+    Include results before the given time.
     """
-    beforeTime: String
+    beforeTime: Time
 
     """
     Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.
@@ -2639,7 +2605,7 @@ type Query {
     next: String
 
     """Specifies a prefix which must be contained in the note field."""
-    notePrefix: String
+    notePrefix: Bytes
 
     """Include results which include the rekey-to field."""
     rekeyTo: Boolean
@@ -2657,7 +2623,7 @@ type Query {
     txType: TxType
 
     """Lookup the specific transaction by ID."""
-    txid: String
+    id: String
   ): TransactionsResponse
 }
 
@@ -2669,13 +2635,13 @@ data/bookkeeping/block.go : Block
 """
 type Block {
   """\[gh\] hash to which this block belongs."""
-  genesisHash: String!
+  genesisHash: Bytes!
 
   """\[gen\] ID to which this block belongs."""
   genesisId: String!
 
   """\[prev\] Previous block hash."""
-  previousBlockHash: String!
+  previousBlockHash: Bytes!
 
   """Fields relating to rewards,"""
   rewards: BlockRewards
@@ -2684,18 +2650,18 @@ type Block {
   round: Uint64!
 
   """\[seed\] Sortition seed."""
-  seed: String!
+  seed: Bytes!
 
   """\[ts\] Block creation timestamp in seconds since eposh"""
   timestamp: Uint64!
 
   """\[txns\] list of transactions corresponding to a given round."""
-  transactions: [Transaction!]
+  transactions: [Transaction!]!
 
   """
   \[txn\] TransactionsRoot authenticates the set of transactions appearing in the block. More specifically, it's the root of a merkle tree whose leaves are the block's Txids, in lexicographic order. For the empty block, it's 0. Note that the TxnRoot does not authenticate the signatures on the transactions, only the transactions themselves. Two blocks with the same transactions but in a different order and with different signatures will have the same TxnRoot.
   """
-  transactionsRoot: String!
+  transactionsRoot: Bytes!
 
   """
   \[tc\] TxnCounter counts the number of transactions committed in the ledger, from the time at which support for this feature was introduced.
@@ -2716,7 +2682,7 @@ type BlockRewards {
   """
   \[fees\] accepts transaction fees, it can only spend to the incentive pool.
   """
-  feeSink: String!
+  feeSink: Address!
 
   """
   \[rwcalr\] number of leftover MicroAlgos after the distribution of rewards-rate MicroAlgos for every reward unit in the next round.
@@ -2731,7 +2697,7 @@ type BlockRewards {
   """
   \[rwd\] accepts periodic injections from the fee-sink and continually redistributes them as rewards.
   """
-  rewardsPool: String!
+  rewardsPool: Address!
 
   """
   \[rate\] Number of new MicroAlgos added to the participation stake from rewards at the next round.
@@ -2792,7 +2758,7 @@ type Transaction {
   """
   \[sgnr\] this is included with signed transactions when the signing address does not equal the sender. The backend can use this to ensure that auth addr is equal to the accounts auth addr.
   """
-  authAddr: String
+  authAddr: Address
 
   """\[rc\] rewards applied to close-remainder-to account."""
   closeRewards: Uint64
@@ -2806,12 +2772,12 @@ type Transaction {
   """
   Specifies an application index (ID) if an application was created with this transaction.
   """
-  createdApplicationIndex: Uint64
+  createdApplicationId: Uint64
 
   """
   Specifies an asset index (ID) if an asset was created with this transaction.
   """
-  createdAssetIndex: Uint64
+  createdAssetId: Uint64
 
   """\[fee\] Transaction fee."""
   fee: Uint64!
@@ -2820,7 +2786,7 @@ type Transaction {
   firstValid: Uint64!
 
   """\[gh\] Hash of genesis block."""
-  genesisHash: String
+  genesisHash: Bytes
 
   """\[gen\] genesis block ID."""
   genesisId: String
@@ -2831,7 +2797,7 @@ type Transaction {
   """
   \[grp\] Base64 encoded byte array of a sha512/256 digest. When present indicates that this transaction is part of a transaction group and the value is the sha512/256 hash of the transactions in that group.
   """
-  group: String
+  group: Bytes
 
   """Transaction ID"""
   id: String!
@@ -2853,7 +2819,7 @@ type Transaction {
   """
   \[lx\] Base64 encoded 32-byte array. Lease enforces mutual exclusion of transactions.  If this field is nonzero, then once the transaction is confirmed, it acquires the lease identified by the (Sender, Lease) pair of the transaction until the LastValid round passes.  While this transaction possesses the lease, no other transaction specifying this lease can be confirmed.
   """
-  lease: String
+  lease: Bytes
 
   """
   \[ld\] Local state key/value changes for the application being executed by this transaction.
@@ -2861,7 +2827,7 @@ type Transaction {
   localStateDelta: [AccountStateDelta!]
 
   """\[note\] Free form data."""
-  note: String
+  note: Bytes
 
   """
   Fields for a payment transaction.
@@ -2877,13 +2843,13 @@ type Transaction {
   """
   \[rekey\] when included in a valid transaction, the accounts auth addr will be updated with this value and future signatures must be signed with the key represented by this address.
   """
-  rekeyTo: String
+  rekeyTo: Address
 
   """Time when the block this transaction is in was confirmed."""
   roundTime: Uint64
 
   """\[snd\] Sender's address."""
-  sender: String!
+  sender: Address!
 
   """\[rs\] rewards applied to sender account."""
   senderRewards: Uint64
@@ -2917,12 +2883,12 @@ type TransactionApplication {
   """
   \[apat\] List of accounts in addition to the sender that may be accessed from the application's approval-program and clear-state-program.
   """
-  accounts: [String!]
+  accounts: [Address!]!
 
   """
   \[apaa\] transaction specific arguments accessed from the application's approval-program and clear-state-program.
   """
-  applicationArgs: [String!]
+  applicationArgs: [Bytes!]!
 
   """\[apid\] ID of the application being configured or empty if creating."""
   applicationId: Uint64!
@@ -2930,12 +2896,12 @@ type TransactionApplication {
   """
   \[apap\] Logic executed for every application transaction, except when on-completion is set to "clear". It can read and write global state for the application, as well as account-specific local state. Approval programs may reject the transaction.
   """
-  approvalProgram: String
+  approvalProgram: Bytes
 
   """
   \[apsu\] Logic executed for application transactions with on-completion set to "clear". It can read and write global state for the application, as well as account-specific local state. Clear state programs cannot reject the transaction.
   """
-  clearStateProgram: String
+  clearStateProgram: Bytes
 
   """\[epp\] specifies the additional app program len requested in pages."""
   extraProgramPages: Uint64
@@ -2943,12 +2909,12 @@ type TransactionApplication {
   """
   \[apfa\] Lists the applications in addition to the application-id whose global states may be accessed by this application's approval-program and clear-state-program. The access is read-only.
   """
-  foreignApps: [Uint64]
+  foreignApps: [Uint64!]!
 
   """
   \[apas\] lists the assets whose parameters may be accessed by this application's ApprovalProgram and ClearStateProgram. The access is read-only.
   """
-  foreignAssets: [Uint64]
+  foreignAssets: [Uint64!]!
 
   """
   Represents a \[apls\] local-state or \[apgs\] global-state schema. These schemas determine how much storage may be used in a local-state or global-state for an application. The more space used, the larger minimum balance must be maintained in the account holding the data.
@@ -3036,12 +3002,12 @@ type AssetParams {
   """
   \[c\] Address of account used to clawback holdings of this asset.  If empty, clawback is not permitted.
   """
-  clawback: String
+  clawback: Address
 
   """
   The address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
   """
-  creator: String!
+  creator: Address!
 
   """
   \[dc\] The number of digits to use after the decimal point when displaying this asset. If 0, the asset is not divisible. If 1, the base unit of the asset is in tenths. If 2, the base unit of the asset is in hundredths, and so on. This value must be between 0 and 19 (inclusive).
@@ -3054,12 +3020,12 @@ type AssetParams {
   """
   \[f\] Address of account used to freeze holdings of this asset.  If empty, freezing is not permitted.
   """
-  freeze: String
+  freeze: Address
 
   """
   \[m\] Address of account used to manage the keys of this asset and to destroy it.
   """
-  manager: String
+  manager: Address
 
   """
   \[am\] A commitment to some unspecified asset metadata. The format of this metadata is up to the application.
@@ -3072,7 +3038,7 @@ type AssetParams {
   """
   \[r\] Address of account holding reserve (non-minted) units of this asset.
   """
-  reserve: String
+  reserve: Address
 
   """\[t\] The total number of units of this asset."""
   total: Uint64!
@@ -3092,7 +3058,7 @@ data/transactions/asset.go : AssetFreezeTxnFields
 """
 type TransactionAssetFreeze {
   """\[fadd\] Address of the account whose asset is being frozen or thawed."""
-  address: String!
+  address: Address!
 
   """\[faid\] ID of the asset being frozen or thawed."""
   assetId: Uint64!
@@ -3124,20 +3090,20 @@ type TransactionAssetTransfer {
   """
   \[aclose\] Indicates that the asset should be removed from the account's Assets map, and specifies where the remaining asset holdings should be transferred.  It's always valid to transfer remaining asset holdings to the creator account.
   """
-  closeTo: String
+  closeTo: Address
 
   """\[arcv\] Recipient address of the transfer."""
-  receiver: String!
+  receiver: Address!
 
   """
   \[asnd\] The effective sender during a clawback transactions. If this is not a zero value, the real transaction sender must be the Clawback address from the AssetParams.
   """
-  sender: String
+  sender: Address
 }
 
 """Key-value pairs for StateDelta."""
 type EvalDeltaKeyValue {
-  key: String!
+  key: Bytes!
 
   """Represents a TEAL value delta."""
   value: EvalDelta!
@@ -3149,7 +3115,7 @@ type EvalDelta {
   action: Uint64!
 
   """\[bs\] bytes value."""
-  bytes: String
+  bytes: Bytes
 
   """\[ui\] uint value."""
   uint: Uint64
@@ -3163,12 +3129,12 @@ data/transactions/keyreg.go : KeyregTxnFields
 """
 type TransactionKeyreg {
   """\[nonpart\] Mark the account as participating or non-participating."""
-  nonParticipation: Boolean
+  nonParticipation: Boolean!
 
   """
   \[selkey\] Public key used with the Verified Random Function (VRF) result during committee selection.
   """
-  selectionParticipationKey: String
+  selectionParticipationKey: Bytes
 
   """\[votefst\] First round this participation key is valid."""
   voteFirstValid: Uint64
@@ -3182,12 +3148,12 @@ type TransactionKeyreg {
   """
   \[votekey\] Participation public key used in key registration transactions.
   """
-  voteParticipationKey: String
+  voteParticipationKey: Bytes
 }
 
 """Application state delta."""
 type AccountStateDelta {
-  address: String!
+  address: Address!
 
   """Application state delta."""
   delta: [EvalDeltaKeyValue!]!
@@ -3211,10 +3177,10 @@ type TransactionPayment {
   """
   \[close\] when set, indicates that the sending account should be closed and all remaining funds be transferred to this address.
   """
-  closeRemainderTo: String
+  closeRemainderTo: Address
 
   """\[rcv\] receiver's address."""
-  receiver: String!
+  receiver: Address!
 }
 
 """
@@ -3238,7 +3204,7 @@ type TransactionSignature {
   multisig: TransactionSignatureMultisig
 
   """\[sig\] Standard ed25519 signature."""
-  sig: String
+  sig: Bytes
 }
 
 """
@@ -3249,12 +3215,12 @@ data/transactions/logicsig.go
 """
 type TransactionSignatureLogicsig {
   """\[arg\] Logic arguments, base64 encoded."""
-  args: [String!]
+  args: [Bytes!]!
 
   """
   \[l\] Program signed by a signature or multi signature, or hashed to be the address of ana ccount. Base64 encoded TEAL program.
   """
-  logic: String!
+  logic: Bytes!
 
   """
   \[msig\] structure holding multiple subsignatures.
@@ -3265,7 +3231,7 @@ type TransactionSignatureLogicsig {
   multisigSignature: TransactionSignatureMultisig
 
   """\[sig\] ed25519 signature."""
-  signature: String
+  signature: Bytes
 }
 
 """
@@ -3287,10 +3253,10 @@ type TransactionSignatureMultisig {
 
 type TransactionSignatureMultisigSubsignature {
   """\[pk\]"""
-  publicKey: String
+  publicKey: Bytes
 
   """\[s\]"""
-  signature: String
+  signature: Bytes
 }
 
 enum TxType {
@@ -3367,7 +3333,7 @@ data/basics/userBalance.go : AccountData
 """
 type Account {
   """the account public key"""
-  address: String!
+  address: Address!
 
   """\[algo\] total number of MicroAlgos in the account"""
   amount: Uint64!
@@ -3402,7 +3368,7 @@ type Account {
   """
   \[spend\] the address against which signing should be checked. If empty, the address of the current account is used. This field can be updated in any transaction by setting the RekeyTo field.
   """
-  authAddr: String
+  authAddr: Address
 
   """Round during which this account was most recently closed."""
   closedAtRound: Uint64
@@ -3462,7 +3428,13 @@ type Account {
   *  Online  - indicates that the associated account used as part of the delegation pool.
   *   NotParticipating - indicates that the associated account is neither a delegator nor a delegate.
   """
-  status: String!
+  status: AccountStatus!
+}
+
+enum AccountStatus {
+  OFFLINE
+  ONLINE
+  NOT_PARTICIPATING
 }
 
 """Stores local state associated with an application."""
@@ -3476,7 +3448,7 @@ type ApplicationLocalState {
   deleted: Boolean!
 
   """The application which this local state is for."""
-  ID: Uint64!
+  id: Uint64!
 
   """Represents a key-value store for use in an application."""
   keyValue: [TealKeyValue!]
@@ -3528,12 +3500,12 @@ type AssetHolding {
   amount: Uint64!
 
   """Asset ID of the holding."""
-  ID: Uint64!
+  id: Uint64!
 
   """
   Address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
   """
-  creator: String!
+  creator: Address!
 
   """
   Whether or not the asset holding is currently deleted from its account.
@@ -3562,7 +3534,7 @@ type Application {
   deletedAtRound: Uint64
 
   """\[appidx\] application index."""
-  ID: Uint64!
+  id: Uint64!
 
   """Stores the global information associated with an application."""
   params: ApplicationParams!
@@ -3579,7 +3551,7 @@ type ApplicationParams {
   """
   The address that created this application. This is the address where the parameters and global state for this application can be found.
   """
-  creator: String
+  creator: Address
 
   """\[epp\] the amount of extra program pages available to this app."""
   extraProgramPages: Uint64
@@ -3606,7 +3578,7 @@ type Asset {
   destroyedAtRound: Uint64
 
   """unique asset identifier"""
-  ID: Uint64!
+  id: Uint64!
 
   """
   AssetParams specifies the parameters for an asset.
@@ -3647,17 +3619,6 @@ enum SigType {
   SIG
   MSIG
   LSIG
-}
-
-type AccountTransactionsResponse {
-  """Round at which the results were computed."""
-  currentRound: Uint64!
-
-  """
-  Used for pagination, when making another request provide this token with the next parameter.
-  """
-  nextToken: String
-  transactions: [Transaction!]!
 }
 
 type AccountsResponse {
@@ -3714,13 +3675,13 @@ type AssetBalancesResponse {
 
 """A simplified version of AssetHolding """
 type MiniAssetHolding {
-  address: String!
+  address: Address!
   amount: Uint64!
 
   """
   Whether or not this asset holding is currently deleted from its account.
   """
-  deleted: Boolean
+  deleted: Boolean!
   frozen: Boolean!
 
   """Round during which the account opted into the asset."""
@@ -3728,17 +3689,6 @@ type MiniAssetHolding {
 
   """Round during which the account opted out of the asset."""
   optedOutAtRound: Uint64
-}
-
-type AssetTransactionsResponse {
-  """Round at which the results were computed."""
-  currentRound: Uint64!
-
-  """
-  Used for pagination, when making another request provide this token with the next parameter.
-  """
-  nextToken: String
-  transactions: [Transaction!]!
 }
 
 enum AddressRole {
@@ -3811,18 +3761,18 @@ func (ec *executionContext) field_Query_accountTransactions_args(ctx context.Con
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["accountId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountId"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+	if tmp, ok := rawArgs["account"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("account"))
+		arg0, err = ec.unmarshalNAddress2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["accountId"] = arg0
-	var arg1 *string
+	args["account"] = arg0
+	var arg1 *time.Time
 	if tmp, ok := rawArgs["afterTime"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("afterTime"))
-		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg1, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3837,10 +3787,10 @@ func (ec *executionContext) field_Query_accountTransactions_args(ctx context.Con
 		}
 	}
 	args["assetId"] = arg2
-	var arg3 *string
+	var arg3 *time.Time
 	if tmp, ok := rawArgs["beforeTime"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("beforeTime"))
-		arg3, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg3, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3900,10 +3850,10 @@ func (ec *executionContext) field_Query_accountTransactions_args(ctx context.Con
 		}
 	}
 	args["next"] = arg9
-	var arg10 *string
+	var arg10 []byte
 	if tmp, ok := rawArgs["notePrefix"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("notePrefix"))
-		arg10, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg10, err = ec.unmarshalOBytes2ᚕbyte(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3946,14 +3896,14 @@ func (ec *executionContext) field_Query_accountTransactions_args(ctx context.Con
 	}
 	args["txType"] = arg14
 	var arg15 *string
-	if tmp, ok := rawArgs["txid"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("txid"))
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 		arg15, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["txid"] = arg15
+	args["id"] = arg15
 	return args, nil
 }
 
@@ -3963,7 +3913,7 @@ func (ec *executionContext) field_Query_account_args(ctx context.Context, rawArg
 	var arg0 string
 	if tmp, ok := rawArgs["address"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("address"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		arg0, err = ec.unmarshalNAddress2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3994,27 +3944,27 @@ func (ec *executionContext) field_Query_accounts_args(ctx context.Context, rawAr
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *uint64
-	if tmp, ok := rawArgs["applicationID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("applicationID"))
+	if tmp, ok := rawArgs["applicationId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("applicationId"))
 		arg0, err = ec.unmarshalOUint642ᚖuint64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["applicationID"] = arg0
+	args["applicationId"] = arg0
 	var arg1 *uint64
-	if tmp, ok := rawArgs["assetID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("assetID"))
+	if tmp, ok := rawArgs["assetId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("assetId"))
 		arg1, err = ec.unmarshalOUint642ᚖuint64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["assetID"] = arg1
+	args["assetId"] = arg1
 	var arg2 *string
 	if tmp, ok := rawArgs["authAddr"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authAddr"))
-		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg2, err = ec.unmarshalOAddress2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4081,14 +4031,14 @@ func (ec *executionContext) field_Query_application_args(ctx context.Context, ra
 	var err error
 	args := map[string]interface{}{}
 	var arg0 uint64
-	if tmp, ok := rawArgs["applicationId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("applicationId"))
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 		arg0, err = ec.unmarshalNUint642uint64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["applicationId"] = arg0
+	args["id"] = arg0
 	var arg1 *bool
 	if tmp, ok := rawArgs["includeAll"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeAll"))
@@ -4105,14 +4055,14 @@ func (ec *executionContext) field_Query_applications_args(ctx context.Context, r
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *uint64
-	if tmp, ok := rawArgs["applicationId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("applicationId"))
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 		arg0, err = ec.unmarshalOUint642ᚖuint64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["applicationId"] = arg0
+	args["id"] = arg0
 	var arg1 *bool
 	if tmp, ok := rawArgs["includeAll"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeAll"))
@@ -4218,7 +4168,7 @@ func (ec *executionContext) field_Query_assetTransactions_args(ctx context.Conte
 	var arg0 *string
 	if tmp, ok := rawArgs["address"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("address"))
-		arg0, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg0, err = ec.unmarshalOAddress2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4233,10 +4183,10 @@ func (ec *executionContext) field_Query_assetTransactions_args(ctx context.Conte
 		}
 	}
 	args["addressRole"] = arg1
-	var arg2 *string
+	var arg2 *time.Time
 	if tmp, ok := rawArgs["afterTime"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("afterTime"))
-		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg2, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4251,10 +4201,10 @@ func (ec *executionContext) field_Query_assetTransactions_args(ctx context.Conte
 		}
 	}
 	args["assetId"] = arg3
-	var arg4 *string
+	var arg4 *time.Time
 	if tmp, ok := rawArgs["beforeTime"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("beforeTime"))
-		arg4, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg4, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4323,10 +4273,10 @@ func (ec *executionContext) field_Query_assetTransactions_args(ctx context.Conte
 		}
 	}
 	args["next"] = arg11
-	var arg12 *string
+	var arg12 []byte
 	if tmp, ok := rawArgs["notePrefix"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("notePrefix"))
-		arg12, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg12, err = ec.unmarshalOBytes2ᚕbyte(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4369,14 +4319,14 @@ func (ec *executionContext) field_Query_assetTransactions_args(ctx context.Conte
 	}
 	args["txType"] = arg16
 	var arg17 *string
-	if tmp, ok := rawArgs["txid"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("txid"))
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 		arg17, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["txid"] = arg17
+	args["id"] = arg17
 	return args, nil
 }
 
@@ -4384,14 +4334,14 @@ func (ec *executionContext) field_Query_asset_args(ctx context.Context, rawArgs 
 	var err error
 	args := map[string]interface{}{}
 	var arg0 uint64
-	if tmp, ok := rawArgs["assetId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("assetId"))
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 		arg0, err = ec.unmarshalNUint642uint64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["assetId"] = arg0
+	args["id"] = arg0
 	var arg1 *bool
 	if tmp, ok := rawArgs["includeAll"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeAll"))
@@ -4408,18 +4358,18 @@ func (ec *executionContext) field_Query_assets_args(ctx context.Context, rawArgs
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *uint64
-	if tmp, ok := rawArgs["assetId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("assetId"))
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 		arg0, err = ec.unmarshalOUint642ᚖuint64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["assetId"] = arg0
+	args["id"] = arg0
 	var arg1 *string
 	if tmp, ok := rawArgs["creator"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("creator"))
-		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg1, err = ec.unmarshalOAddress2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4492,14 +4442,14 @@ func (ec *executionContext) field_Query_transaction_args(ctx context.Context, ra
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["txid"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("txid"))
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["txid"] = arg0
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -4509,7 +4459,7 @@ func (ec *executionContext) field_Query_transactions_args(ctx context.Context, r
 	var arg0 *string
 	if tmp, ok := rawArgs["address"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("address"))
-		arg0, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg0, err = ec.unmarshalOAddress2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4524,10 +4474,10 @@ func (ec *executionContext) field_Query_transactions_args(ctx context.Context, r
 		}
 	}
 	args["addressRole"] = arg1
-	var arg2 *string
+	var arg2 *time.Time
 	if tmp, ok := rawArgs["afterTime"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("afterTime"))
-		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg2, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4551,10 +4501,10 @@ func (ec *executionContext) field_Query_transactions_args(ctx context.Context, r
 		}
 	}
 	args["assetId"] = arg4
-	var arg5 *string
+	var arg5 *time.Time
 	if tmp, ok := rawArgs["beforeTime"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("beforeTime"))
-		arg5, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg5, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4623,10 +4573,10 @@ func (ec *executionContext) field_Query_transactions_args(ctx context.Context, r
 		}
 	}
 	args["next"] = arg12
-	var arg13 *string
+	var arg13 []byte
 	if tmp, ok := rawArgs["notePrefix"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("notePrefix"))
-		arg13, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg13, err = ec.unmarshalOBytes2ᚕbyte(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4669,14 +4619,14 @@ func (ec *executionContext) field_Query_transactions_args(ctx context.Context, r
 	}
 	args["txType"] = arg17
 	var arg18 *string
-	if tmp, ok := rawArgs["txid"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("txid"))
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 		arg18, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["txid"] = arg18
+	args["id"] = arg18
 	return args, nil
 }
 
@@ -4750,7 +4700,7 @@ func (ec *executionContext) _Account_address(ctx context.Context, field graphql.
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAddress2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Account_amount(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
@@ -4992,7 +4942,7 @@ func (ec *executionContext) _Account_authAddr(ctx context.Context, field graphql
 	}
 	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOAddress2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Account_closedAtRound(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
@@ -5395,9 +5345,9 @@ func (ec *executionContext) _Account_status(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(model.AccountStatus)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAccountStatus2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStatus(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AccountParticipation_selectionParticipationKey(ctx context.Context, field graphql.CollectedField, obj *model.AccountParticipation) (ret graphql.Marshaler) {
@@ -5677,7 +5627,7 @@ func (ec *executionContext) _AccountStateDelta_address(ctx context.Context, fiel
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAddress2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AccountStateDelta_delta(ctx context.Context, field graphql.CollectedField, obj *model.AccountStateDelta) (ret graphql.Marshaler) {
@@ -5713,108 +5663,6 @@ func (ec *executionContext) _AccountStateDelta_delta(ctx context.Context, field 
 	res := resTmp.([]model.EvalDeltaKeyValue)
 	fc.Result = res
 	return ec.marshalNEvalDeltaKeyValue2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValueᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _AccountTransactionsResponse_currentRound(ctx context.Context, field graphql.CollectedField, obj *model.AccountTransactionsResponse) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "AccountTransactionsResponse",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CurrentRound, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(uint64)
-	fc.Result = res
-	return ec.marshalNUint642uint64(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _AccountTransactionsResponse_nextToken(ctx context.Context, field graphql.CollectedField, obj *model.AccountTransactionsResponse) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "AccountTransactionsResponse",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.NextToken, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _AccountTransactionsResponse_transactions(ctx context.Context, field graphql.CollectedField, obj *model.AccountTransactionsResponse) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "AccountTransactionsResponse",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Transactions, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]model.Transaction)
-	fc.Result = res
-	return ec.marshalNTransaction2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AccountsResponse_accounts(ctx context.Context, field graphql.CollectedField, obj *model.AccountsResponse) (ret graphql.Marshaler) {
@@ -6018,7 +5866,7 @@ func (ec *executionContext) _Application_deletedAtRound(ctx context.Context, fie
 	return ec.marshalOUint642ᚖuint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Application_ID(ctx context.Context, field graphql.CollectedField, obj *model.Application) (ret graphql.Marshaler) {
+func (ec *executionContext) _Application_id(ctx context.Context, field graphql.CollectedField, obj *model.Application) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -6155,7 +6003,7 @@ func (ec *executionContext) _ApplicationLocalState_deleted(ctx context.Context, 
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ApplicationLocalState_ID(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationLocalState) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApplicationLocalState_id(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationLocalState) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -6388,7 +6236,7 @@ func (ec *executionContext) _ApplicationParams_creator(ctx context.Context, fiel
 	}
 	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOAddress2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ApplicationParams_extraProgramPages(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationParams) (ret graphql.Marshaler) {
@@ -6857,7 +6705,7 @@ func (ec *executionContext) _Asset_destroyedAtRound(ctx context.Context, field g
 	return ec.marshalOUint642ᚖuint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Asset_ID(ctx context.Context, field graphql.CollectedField, obj *model.Asset) (ret graphql.Marshaler) {
+func (ec *executionContext) _Asset_id(ctx context.Context, field graphql.CollectedField, obj *model.Asset) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -7064,7 +6912,7 @@ func (ec *executionContext) _AssetHolding_amount(ctx context.Context, field grap
 	return ec.marshalNUint642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _AssetHolding_ID(ctx context.Context, field graphql.CollectedField, obj *model.AssetHolding) (ret graphql.Marshaler) {
+func (ec *executionContext) _AssetHolding_id(ctx context.Context, field graphql.CollectedField, obj *model.AssetHolding) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -7131,7 +6979,7 @@ func (ec *executionContext) _AssetHolding_creator(ctx context.Context, field gra
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAddress2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AssetHolding_deleted(ctx context.Context, field graphql.CollectedField, obj *model.AssetHolding) (ret graphql.Marshaler) {
@@ -7297,7 +7145,7 @@ func (ec *executionContext) _AssetParams_clawback(ctx context.Context, field gra
 	}
 	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOAddress2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AssetParams_creator(ctx context.Context, field graphql.CollectedField, obj *model.AssetParams) (ret graphql.Marshaler) {
@@ -7332,7 +7180,7 @@ func (ec *executionContext) _AssetParams_creator(ctx context.Context, field grap
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAddress2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AssetParams_decimals(ctx context.Context, field graphql.CollectedField, obj *model.AssetParams) (ret graphql.Marshaler) {
@@ -7431,7 +7279,7 @@ func (ec *executionContext) _AssetParams_freeze(ctx context.Context, field graph
 	}
 	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOAddress2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AssetParams_manager(ctx context.Context, field graphql.CollectedField, obj *model.AssetParams) (ret graphql.Marshaler) {
@@ -7463,7 +7311,7 @@ func (ec *executionContext) _AssetParams_manager(ctx context.Context, field grap
 	}
 	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOAddress2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AssetParams_metadataHash(ctx context.Context, field graphql.CollectedField, obj *model.AssetParams) (ret graphql.Marshaler) {
@@ -7559,7 +7407,7 @@ func (ec *executionContext) _AssetParams_reserve(ctx context.Context, field grap
 	}
 	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOAddress2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AssetParams_total(ctx context.Context, field graphql.CollectedField, obj *model.AssetParams) (ret graphql.Marshaler) {
@@ -7731,108 +7579,6 @@ func (ec *executionContext) _AssetResponse_currentRound(ctx context.Context, fie
 	return ec.marshalNUint642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _AssetTransactionsResponse_currentRound(ctx context.Context, field graphql.CollectedField, obj *model.AssetTransactionsResponse) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "AssetTransactionsResponse",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CurrentRound, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(uint64)
-	fc.Result = res
-	return ec.marshalNUint642uint64(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _AssetTransactionsResponse_nextToken(ctx context.Context, field graphql.CollectedField, obj *model.AssetTransactionsResponse) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "AssetTransactionsResponse",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.NextToken, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _AssetTransactionsResponse_transactions(ctx context.Context, field graphql.CollectedField, obj *model.AssetTransactionsResponse) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "AssetTransactionsResponse",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Transactions, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]model.Transaction)
-	fc.Result = res
-	return ec.marshalNTransaction2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionᚄ(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _AssetsResponse_assets(ctx context.Context, field graphql.CollectedField, obj *model.AssetsResponse) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -7965,9 +7711,9 @@ func (ec *executionContext) _Block_genesisHash(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Block_genesisId(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
@@ -8035,9 +7781,9 @@ func (ec *executionContext) _Block_previousBlockHash(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Block_rewards(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
@@ -8137,9 +7883,9 @@ func (ec *executionContext) _Block_seed(ctx context.Context, field graphql.Colle
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Block_timestamp(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
@@ -8202,11 +7948,14 @@ func (ec *executionContext) _Block_transactions(ctx context.Context, field graph
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.([]model.Transaction)
 	fc.Result = res
-	return ec.marshalOTransaction2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionᚄ(ctx, field.Selections, res)
+	return ec.marshalNTransaction2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Block_transactionsRoot(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
@@ -8239,9 +7988,9 @@ func (ec *executionContext) _Block_transactionsRoot(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Block_txnCounter(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
@@ -8372,7 +8121,7 @@ func (ec *executionContext) _BlockRewards_feeSink(ctx context.Context, field gra
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAddress2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _BlockRewards_rewardsCalculationRound(ctx context.Context, field graphql.CollectedField, obj *model.BlockRewards) (ret graphql.Marshaler) {
@@ -8477,7 +8226,7 @@ func (ec *executionContext) _BlockRewards_rewardsPool(ctx context.Context, field
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAddress2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _BlockRewards_rewardsRate(ctx context.Context, field graphql.CollectedField, obj *model.BlockRewards) (ret graphql.Marshaler) {
@@ -8871,9 +8620,9 @@ func (ec *executionContext) _EvalDelta_bytes(ctx context.Context, field graphql.
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _EvalDelta_uint(ctx context.Context, field graphql.CollectedField, obj *model.EvalDelta) (ret graphql.Marshaler) {
@@ -8938,9 +8687,9 @@ func (ec *executionContext) _EvalDeltaKeyValue_key(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _EvalDeltaKeyValue_value(ctx context.Context, field graphql.CollectedField, obj *model.EvalDeltaKeyValue) (ret graphql.Marshaler) {
@@ -9214,7 +8963,7 @@ func (ec *executionContext) _MiniAssetHolding_address(ctx context.Context, field
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAddress2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _MiniAssetHolding_amount(ctx context.Context, field graphql.CollectedField, obj *model.MiniAssetHolding) (ret graphql.Marshaler) {
@@ -9277,11 +9026,14 @@ func (ec *executionContext) _MiniAssetHolding_deleted(ctx context.Context, field
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*bool)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _MiniAssetHolding_frozen(ctx context.Context, field graphql.CollectedField, obj *model.MiniAssetHolding) (ret graphql.Marshaler) {
@@ -9518,7 +9270,7 @@ func (ec *executionContext) _Query_accountTransactions(ctx context.Context, fiel
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().AccountTransactions(rctx, args["accountId"].(string), args["afterTime"].(*string), args["assetId"].(*uint64), args["beforeTime"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["limit"].(*uint64), args["maxRound"].(*uint64), args["minRound"].(*uint64), args["next"].(*string), args["notePrefix"].(*string), args["rekeyTo"].(*bool), args["round"].(*uint64), args["sigType"].(*model.SigType), args["txType"].(*model.TxType), args["txid"].(*string))
+		return ec.resolvers.Query().AccountTransactions(rctx, args["account"].(string), args["afterTime"].(*time.Time), args["assetId"].(*uint64), args["beforeTime"].(*time.Time), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["limit"].(*uint64), args["maxRound"].(*uint64), args["minRound"].(*uint64), args["next"].(*string), args["notePrefix"].([]byte), args["rekeyTo"].(*bool), args["round"].(*uint64), args["sigType"].(*model.SigType), args["txType"].(*model.TxType), args["id"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9527,9 +9279,9 @@ func (ec *executionContext) _Query_accountTransactions(ctx context.Context, fiel
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.AccountTransactionsResponse)
+	res := resTmp.(*model.TransactionsResponse)
 	fc.Result = res
-	return ec.marshalOAccountTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountTransactionsResponse(ctx, field.Selections, res)
+	return ec.marshalOTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionsResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_accounts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -9557,7 +9309,7 @@ func (ec *executionContext) _Query_accounts(ctx context.Context, field graphql.C
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Accounts(rctx, args["applicationID"].(*uint64), args["assetID"].(*uint64), args["authAddr"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["includeAll"].(*bool), args["limit"].(*uint64), args["next"].(*string), args["round"].(*uint64))
+		return ec.resolvers.Query().Accounts(rctx, args["applicationId"].(*uint64), args["assetId"].(*uint64), args["authAddr"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["includeAll"].(*bool), args["limit"].(*uint64), args["next"].(*string), args["round"].(*uint64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9596,7 +9348,7 @@ func (ec *executionContext) _Query_application(ctx context.Context, field graphq
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Application(rctx, args["applicationId"].(uint64), args["includeAll"].(*bool))
+		return ec.resolvers.Query().Application(rctx, args["id"].(uint64), args["includeAll"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9635,7 +9387,7 @@ func (ec *executionContext) _Query_applications(ctx context.Context, field graph
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Applications(rctx, args["applicationId"].(*uint64), args["includeAll"].(*bool), args["limit"].(*uint64), args["next"].(*string))
+		return ec.resolvers.Query().Applications(rctx, args["id"].(*uint64), args["includeAll"].(*bool), args["limit"].(*uint64), args["next"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9674,7 +9426,7 @@ func (ec *executionContext) _Query_asset(ctx context.Context, field graphql.Coll
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Asset(rctx, args["assetId"].(uint64), args["includeAll"].(*bool))
+		return ec.resolvers.Query().Asset(rctx, args["id"].(uint64), args["includeAll"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9752,7 +9504,7 @@ func (ec *executionContext) _Query_assetTransactions(ctx context.Context, field 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().AssetTransactions(rctx, args["address"].(*string), args["addressRole"].(*model.AddressRole), args["afterTime"].(*string), args["assetId"].(uint64), args["beforeTime"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["excludeCloseTo"].(*bool), args["limit"].(*uint64), args["maxRound"].(*uint64), args["minRound"].(*uint64), args["next"].(*string), args["notePrefix"].(*string), args["rekeyTo"].(*bool), args["round"].(*uint64), args["sigType"].(*model.SigType), args["txType"].(*model.TxType), args["txid"].(*string))
+		return ec.resolvers.Query().AssetTransactions(rctx, args["address"].(*string), args["addressRole"].(*model.AddressRole), args["afterTime"].(*time.Time), args["assetId"].(uint64), args["beforeTime"].(*time.Time), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["excludeCloseTo"].(*bool), args["limit"].(*uint64), args["maxRound"].(*uint64), args["minRound"].(*uint64), args["next"].(*string), args["notePrefix"].([]byte), args["rekeyTo"].(*bool), args["round"].(*uint64), args["sigType"].(*model.SigType), args["txType"].(*model.TxType), args["id"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9761,9 +9513,9 @@ func (ec *executionContext) _Query_assetTransactions(ctx context.Context, field 
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.AssetTransactionsResponse)
+	res := resTmp.(*model.TransactionsResponse)
 	fc.Result = res
-	return ec.marshalOAssetTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetTransactionsResponse(ctx, field.Selections, res)
+	return ec.marshalOTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionsResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_assets(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -9791,7 +9543,7 @@ func (ec *executionContext) _Query_assets(ctx context.Context, field graphql.Col
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Assets(rctx, args["assetId"].(*uint64), args["creator"].(*string), args["includeAll"].(*bool), args["limit"].(*uint64), args["name"].(*string), args["next"].(*string), args["unit"].(*string))
+		return ec.resolvers.Query().Assets(rctx, args["id"].(*uint64), args["creator"].(*string), args["includeAll"].(*bool), args["limit"].(*uint64), args["name"].(*string), args["next"].(*string), args["unit"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9830,7 +9582,7 @@ func (ec *executionContext) _Query_transaction(ctx context.Context, field graphq
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Transaction(rctx, args["txid"].(string))
+		return ec.resolvers.Query().Transaction(rctx, args["id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9869,7 +9621,7 @@ func (ec *executionContext) _Query_transactions(ctx context.Context, field graph
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Transactions(rctx, args["address"].(*string), args["addressRole"].(*model.AddressRole), args["afterTime"].(*string), args["applicationId"].(*uint64), args["assetId"].(*uint64), args["beforeTime"].(*string), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["excludeCloseTo"].(*bool), args["limit"].(*uint64), args["maxRound"].(*uint64), args["minRound"].(*uint64), args["next"].(*string), args["notePrefix"].(*string), args["rekeyTo"].(*bool), args["round"].(*uint64), args["sigType"].(*model.SigType), args["txType"].(*model.TxType), args["txid"].(*string))
+		return ec.resolvers.Query().Transactions(rctx, args["address"].(*string), args["addressRole"].(*model.AddressRole), args["afterTime"].(*time.Time), args["applicationId"].(*uint64), args["assetId"].(*uint64), args["beforeTime"].(*time.Time), args["currencyGreaterThan"].(*uint64), args["currencyLessThan"].(*uint64), args["excludeCloseTo"].(*bool), args["limit"].(*uint64), args["maxRound"].(*uint64), args["minRound"].(*uint64), args["next"].(*string), args["notePrefix"].([]byte), args["rekeyTo"].(*bool), args["round"].(*uint64), args["sigType"].(*model.SigType), args["txType"].(*model.TxType), args["id"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10356,7 +10108,7 @@ func (ec *executionContext) _Transaction_authAddr(ctx context.Context, field gra
 	}
 	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOAddress2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Transaction_closeRewards(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
@@ -10455,7 +10207,7 @@ func (ec *executionContext) _Transaction_confirmedRound(ctx context.Context, fie
 	return ec.marshalOUint642ᚖuint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Transaction_createdApplicationIndex(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
+func (ec *executionContext) _Transaction_createdApplicationId(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -10473,7 +10225,7 @@ func (ec *executionContext) _Transaction_createdApplicationIndex(ctx context.Con
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedApplicationIndex, nil
+		return obj.CreatedApplicationID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10487,7 +10239,7 @@ func (ec *executionContext) _Transaction_createdApplicationIndex(ctx context.Con
 	return ec.marshalOUint642ᚖuint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Transaction_createdAssetIndex(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
+func (ec *executionContext) _Transaction_createdAssetId(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -10505,7 +10257,7 @@ func (ec *executionContext) _Transaction_createdAssetIndex(ctx context.Context, 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAssetIndex, nil
+		return obj.CreatedAssetID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10616,9 +10368,9 @@ func (ec *executionContext) _Transaction_genesisHash(ctx context.Context, field 
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Transaction_genesisId(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
@@ -10712,9 +10464,9 @@ func (ec *executionContext) _Transaction_group(ctx context.Context, field graphq
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Transaction_id(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
@@ -10878,9 +10630,9 @@ func (ec *executionContext) _Transaction_lease(ctx context.Context, field graphq
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Transaction_localStateDelta(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
@@ -10942,9 +10694,9 @@ func (ec *executionContext) _Transaction_note(ctx context.Context, field graphql
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Transaction_paymentTransaction(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
@@ -11040,7 +10792,7 @@ func (ec *executionContext) _Transaction_rekeyTo(ctx context.Context, field grap
 	}
 	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOAddress2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Transaction_roundTime(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
@@ -11107,7 +10859,7 @@ func (ec *executionContext) _Transaction_sender(ctx context.Context, field graph
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAddress2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Transaction_senderRewards(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
@@ -11237,11 +10989,14 @@ func (ec *executionContext) _TransactionApplication_accounts(ctx context.Context
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.([]string)
 	fc.Result = res
-	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+	return ec.marshalNAddress2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionApplication_applicationArgs(ctx context.Context, field graphql.CollectedField, obj *model.TransactionApplication) (ret graphql.Marshaler) {
@@ -11269,11 +11024,14 @@ func (ec *executionContext) _TransactionApplication_applicationArgs(ctx context.
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]string)
+	res := resTmp.([][]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕᚕbyteᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionApplication_applicationId(ctx context.Context, field graphql.CollectedField, obj *model.TransactionApplication) (ret graphql.Marshaler) {
@@ -11338,9 +11096,9 @@ func (ec *executionContext) _TransactionApplication_approvalProgram(ctx context.
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionApplication_clearStateProgram(ctx context.Context, field graphql.CollectedField, obj *model.TransactionApplication) (ret graphql.Marshaler) {
@@ -11370,9 +11128,9 @@ func (ec *executionContext) _TransactionApplication_clearStateProgram(ctx contex
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionApplication_extraProgramPages(ctx context.Context, field graphql.CollectedField, obj *model.TransactionApplication) (ret graphql.Marshaler) {
@@ -11432,11 +11190,14 @@ func (ec *executionContext) _TransactionApplication_foreignApps(ctx context.Cont
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*uint64)
+	res := resTmp.([]uint64)
 	fc.Result = res
-	return ec.marshalOUint642ᚕᚖuint64(ctx, field.Selections, res)
+	return ec.marshalNUint642ᚕuint64ᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionApplication_foreignAssets(ctx context.Context, field graphql.CollectedField, obj *model.TransactionApplication) (ret graphql.Marshaler) {
@@ -11464,11 +11225,14 @@ func (ec *executionContext) _TransactionApplication_foreignAssets(ctx context.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*uint64)
+	res := resTmp.([]uint64)
 	fc.Result = res
-	return ec.marshalOUint642ᚕᚖuint64(ctx, field.Selections, res)
+	return ec.marshalNUint642ᚕuint64ᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionApplication_globalStateSchema(ctx context.Context, field graphql.CollectedField, obj *model.TransactionApplication) (ret graphql.Marshaler) {
@@ -11666,7 +11430,7 @@ func (ec *executionContext) _TransactionAssetFreeze_address(ctx context.Context,
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAddress2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionAssetFreeze_assetId(ctx context.Context, field graphql.CollectedField, obj *model.TransactionAssetFreeze) (ret graphql.Marshaler) {
@@ -11870,7 +11634,7 @@ func (ec *executionContext) _TransactionAssetTransfer_closeTo(ctx context.Contex
 	}
 	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOAddress2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionAssetTransfer_receiver(ctx context.Context, field graphql.CollectedField, obj *model.TransactionAssetTransfer) (ret graphql.Marshaler) {
@@ -11905,7 +11669,7 @@ func (ec *executionContext) _TransactionAssetTransfer_receiver(ctx context.Conte
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAddress2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionAssetTransfer_sender(ctx context.Context, field graphql.CollectedField, obj *model.TransactionAssetTransfer) (ret graphql.Marshaler) {
@@ -11937,7 +11701,7 @@ func (ec *executionContext) _TransactionAssetTransfer_sender(ctx context.Context
 	}
 	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOAddress2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionKeyreg_nonParticipation(ctx context.Context, field graphql.CollectedField, obj *model.TransactionKeyreg) (ret graphql.Marshaler) {
@@ -11965,11 +11729,14 @@ func (ec *executionContext) _TransactionKeyreg_nonParticipation(ctx context.Cont
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*bool)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionKeyreg_selectionParticipationKey(ctx context.Context, field graphql.CollectedField, obj *model.TransactionKeyreg) (ret graphql.Marshaler) {
@@ -11999,9 +11766,9 @@ func (ec *executionContext) _TransactionKeyreg_selectionParticipationKey(ctx con
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionKeyreg_voteFirstValid(ctx context.Context, field graphql.CollectedField, obj *model.TransactionKeyreg) (ret graphql.Marshaler) {
@@ -12127,9 +11894,9 @@ func (ec *executionContext) _TransactionKeyreg_voteParticipationKey(ctx context.
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionPayment_amount(ctx context.Context, field graphql.CollectedField, obj *model.TransactionPayment) (ret graphql.Marshaler) {
@@ -12228,7 +11995,7 @@ func (ec *executionContext) _TransactionPayment_closeRemainderTo(ctx context.Con
 	}
 	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOAddress2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionPayment_receiver(ctx context.Context, field graphql.CollectedField, obj *model.TransactionPayment) (ret graphql.Marshaler) {
@@ -12263,7 +12030,7 @@ func (ec *executionContext) _TransactionPayment_receiver(ctx context.Context, fi
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAddress2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionResponse_currentRound(ctx context.Context, field graphql.CollectedField, obj *model.TransactionResponse) (ret graphql.Marshaler) {
@@ -12427,9 +12194,9 @@ func (ec *executionContext) _TransactionSignature_sig(ctx context.Context, field
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionSignatureLogicsig_args(ctx context.Context, field graphql.CollectedField, obj *model.TransactionSignatureLogicsig) (ret graphql.Marshaler) {
@@ -12457,11 +12224,14 @@ func (ec *executionContext) _TransactionSignatureLogicsig_args(ctx context.Conte
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]string)
+	res := resTmp.([][]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕᚕbyteᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionSignatureLogicsig_logic(ctx context.Context, field graphql.CollectedField, obj *model.TransactionSignatureLogicsig) (ret graphql.Marshaler) {
@@ -12494,9 +12264,9 @@ func (ec *executionContext) _TransactionSignatureLogicsig_logic(ctx context.Cont
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionSignatureLogicsig_multisigSignature(ctx context.Context, field graphql.CollectedField, obj *model.TransactionSignatureLogicsig) (ret graphql.Marshaler) {
@@ -12558,9 +12328,9 @@ func (ec *executionContext) _TransactionSignatureLogicsig_signature(ctx context.
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionSignatureMultisig_subsignature(ctx context.Context, field graphql.CollectedField, obj *model.TransactionSignatureMultisig) (ret graphql.Marshaler) {
@@ -12686,9 +12456,9 @@ func (ec *executionContext) _TransactionSignatureMultisigSubsignature_publicKey(
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionSignatureMultisigSubsignature_signature(ctx context.Context, field graphql.CollectedField, obj *model.TransactionSignatureMultisigSubsignature) (ret graphql.Marshaler) {
@@ -12718,9 +12488,9 @@ func (ec *executionContext) _TransactionSignatureMultisigSubsignature_signature(
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]byte)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TransactionsResponse_currentRound(ctx context.Context, field graphql.CollectedField, obj *model.TransactionsResponse) (ret graphql.Marshaler) {
@@ -14135,40 +13905,6 @@ func (ec *executionContext) _AccountStateDelta(ctx context.Context, sel ast.Sele
 	return out
 }
 
-var accountTransactionsResponseImplementors = []string{"AccountTransactionsResponse"}
-
-func (ec *executionContext) _AccountTransactionsResponse(ctx context.Context, sel ast.SelectionSet, obj *model.AccountTransactionsResponse) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, accountTransactionsResponseImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("AccountTransactionsResponse")
-		case "currentRound":
-			out.Values[i] = ec._AccountTransactionsResponse_currentRound(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "nextToken":
-			out.Values[i] = ec._AccountTransactionsResponse_nextToken(ctx, field, obj)
-		case "transactions":
-			out.Values[i] = ec._AccountTransactionsResponse_transactions(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
 var accountsResponseImplementors = []string{"AccountsResponse"}
 
 func (ec *executionContext) _AccountsResponse(ctx context.Context, sel ast.SelectionSet, obj *model.AccountsResponse) graphql.Marshaler {
@@ -14223,8 +13959,8 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 			}
 		case "deletedAtRound":
 			out.Values[i] = ec._Application_deletedAtRound(ctx, field, obj)
-		case "ID":
-			out.Values[i] = ec._Application_ID(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._Application_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -14262,8 +13998,8 @@ func (ec *executionContext) _ApplicationLocalState(ctx context.Context, sel ast.
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ID":
-			out.Values[i] = ec._ApplicationLocalState_ID(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._ApplicationLocalState_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -14444,8 +14180,8 @@ func (ec *executionContext) _Asset(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "destroyedAtRound":
 			out.Values[i] = ec._Asset_destroyedAtRound(ctx, field, obj)
-		case "ID":
-			out.Values[i] = ec._Asset_ID(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._Asset_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -14515,8 +14251,8 @@ func (ec *executionContext) _AssetHolding(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ID":
-			out.Values[i] = ec._AssetHolding_ID(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._AssetHolding_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -14637,40 +14373,6 @@ func (ec *executionContext) _AssetResponse(ctx context.Context, sel ast.Selectio
 	return out
 }
 
-var assetTransactionsResponseImplementors = []string{"AssetTransactionsResponse"}
-
-func (ec *executionContext) _AssetTransactionsResponse(ctx context.Context, sel ast.SelectionSet, obj *model.AssetTransactionsResponse) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, assetTransactionsResponseImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("AssetTransactionsResponse")
-		case "currentRound":
-			out.Values[i] = ec._AssetTransactionsResponse_currentRound(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "nextToken":
-			out.Values[i] = ec._AssetTransactionsResponse_nextToken(ctx, field, obj)
-		case "transactions":
-			out.Values[i] = ec._AssetTransactionsResponse_transactions(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
 var assetsResponseImplementors = []string{"AssetsResponse"}
 
 func (ec *executionContext) _AssetsResponse(ctx context.Context, sel ast.SelectionSet, obj *model.AssetsResponse) graphql.Marshaler {
@@ -14750,6 +14452,9 @@ func (ec *executionContext) _Block(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "transactions":
 			out.Values[i] = ec._Block_transactions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "transactionsRoot":
 			out.Values[i] = ec._Block_transactionsRoot(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -15019,6 +14724,9 @@ func (ec *executionContext) _MiniAssetHolding(ctx context.Context, sel ast.Selec
 			}
 		case "deleted":
 			out.Values[i] = ec._MiniAssetHolding_deleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "frozen":
 			out.Values[i] = ec._MiniAssetHolding_frozen(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -15340,10 +15048,10 @@ func (ec *executionContext) _Transaction(ctx context.Context, sel ast.SelectionS
 			out.Values[i] = ec._Transaction_closingAmount(ctx, field, obj)
 		case "confirmedRound":
 			out.Values[i] = ec._Transaction_confirmedRound(ctx, field, obj)
-		case "createdApplicationIndex":
-			out.Values[i] = ec._Transaction_createdApplicationIndex(ctx, field, obj)
-		case "createdAssetIndex":
-			out.Values[i] = ec._Transaction_createdAssetIndex(ctx, field, obj)
+		case "createdApplicationId":
+			out.Values[i] = ec._Transaction_createdApplicationId(ctx, field, obj)
+		case "createdAssetId":
+			out.Values[i] = ec._Transaction_createdAssetId(ctx, field, obj)
 		case "fee":
 			out.Values[i] = ec._Transaction_fee(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -15431,8 +15139,14 @@ func (ec *executionContext) _TransactionApplication(ctx context.Context, sel ast
 			out.Values[i] = graphql.MarshalString("TransactionApplication")
 		case "accounts":
 			out.Values[i] = ec._TransactionApplication_accounts(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "applicationArgs":
 			out.Values[i] = ec._TransactionApplication_applicationArgs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "applicationId":
 			out.Values[i] = ec._TransactionApplication_applicationId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -15446,8 +15160,14 @@ func (ec *executionContext) _TransactionApplication(ctx context.Context, sel ast
 			out.Values[i] = ec._TransactionApplication_extraProgramPages(ctx, field, obj)
 		case "foreignApps":
 			out.Values[i] = ec._TransactionApplication_foreignApps(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "foreignAssets":
 			out.Values[i] = ec._TransactionApplication_foreignAssets(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "globalStateSchema":
 			out.Values[i] = ec._TransactionApplication_globalStateSchema(ctx, field, obj)
 		case "localStateSchema":
@@ -15587,6 +15307,9 @@ func (ec *executionContext) _TransactionKeyreg(ctx context.Context, sel ast.Sele
 			out.Values[i] = graphql.MarshalString("TransactionKeyreg")
 		case "nonParticipation":
 			out.Values[i] = ec._TransactionKeyreg_nonParticipation(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "selectionParticipationKey":
 			out.Values[i] = ec._TransactionKeyreg_selectionParticipationKey(ctx, field, obj)
 		case "voteFirstValid":
@@ -15717,6 +15440,9 @@ func (ec *executionContext) _TransactionSignatureLogicsig(ctx context.Context, s
 			out.Values[i] = graphql.MarshalString("TransactionSignatureLogicsig")
 		case "args":
 			out.Values[i] = ec._TransactionSignatureLogicsig_args(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "logic":
 			out.Values[i] = ec._TransactionSignatureLogicsig_logic(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -16125,6 +15851,61 @@ func (ec *executionContext) marshalNAccountStateDelta2githubᚗcomᚋalgorandᚋ
 	return ec._AccountStateDelta(ctx, sel, &v)
 }
 
+func (ec *executionContext) unmarshalNAccountStatus2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStatus(ctx context.Context, v interface{}) (model.AccountStatus, error) {
+	var res model.AccountStatus
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAccountStatus2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStatus(ctx context.Context, sel ast.SelectionSet, v model.AccountStatus) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNAddress2string(ctx context.Context, v interface{}) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAddress2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNAddress2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNAddress2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNAddress2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNAddress2string(ctx, sel, v[i])
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNApplication2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplication(ctx context.Context, sel ast.SelectionSet, v model.Application) graphql.Marshaler {
 	return ec._Application(ctx, sel, &v)
 }
@@ -16365,6 +16146,36 @@ func (ec *executionContext) marshalNBytes2ᚕbyte(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNBytes2ᚕᚕbyteᚄ(ctx context.Context, v interface{}) ([][]byte, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([][]byte, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNBytes2ᚕbyte(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNBytes2ᚕᚕbyteᚄ(ctx context.Context, sel ast.SelectionSet, v [][]byte) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNBytes2ᚕbyte(ctx, sel, v[i])
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNEvalDelta2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDelta(ctx context.Context, sel ast.SelectionSet, v *model.EvalDelta) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -16584,6 +16395,36 @@ func (ec *executionContext) marshalNUint642uint64(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNUint642ᚕuint64ᚄ(ctx context.Context, v interface{}) ([]uint64, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]uint64, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNUint642uint64(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNUint642ᚕuint64ᚄ(ctx context.Context, sel ast.SelectionSet, v []uint64) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNUint642uint64(ctx, sel, v[i])
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -16869,18 +16710,26 @@ func (ec *executionContext) marshalOAccountStateDelta2ᚕgithubᚗcomᚋalgorand
 	return ret
 }
 
-func (ec *executionContext) marshalOAccountTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountTransactionsResponse(ctx context.Context, sel ast.SelectionSet, v *model.AccountTransactionsResponse) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._AccountTransactionsResponse(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalOAccountsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountsResponse(ctx context.Context, sel ast.SelectionSet, v *model.AccountsResponse) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._AccountsResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOAddress2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalString(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOAddress2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalString(*v)
 }
 
 func (ec *executionContext) unmarshalOAddressRole2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAddressRole(ctx context.Context, v interface{}) (*model.AddressRole, error) {
@@ -16946,13 +16795,6 @@ func (ec *executionContext) marshalOAssetResponse2ᚖgithubᚗcomᚋalgorandᚋi
 		return graphql.Null
 	}
 	return ec._AssetResponse(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOAssetTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetTransactionsResponse(ctx context.Context, sel ast.SelectionSet, v *model.AssetTransactionsResponse) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._AssetTransactionsResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAssetsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetsResponse(ctx context.Context, sel ast.SelectionSet, v *model.AssetsResponse) graphql.Marshaler {
@@ -17214,44 +17056,19 @@ func (ec *executionContext) marshalOTealKeyValue2ᚕgithubᚗcomᚋalgorandᚋin
 	return ret
 }
 
-func (ec *executionContext) marshalOTransaction2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Transaction) graphql.Marshaler {
+func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNTransaction2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransaction(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
+	return graphql.MarshalTime(*v)
 }
 
 func (ec *executionContext) marshalOTransactionApplication2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionApplication(ctx context.Context, sel ast.SelectionSet, v *model.TransactionApplication) graphql.Marshaler {
@@ -17378,42 +17195,6 @@ func (ec *executionContext) marshalOTxType2ᚖgithubᚗcomᚋalgorandᚋindexer�
 		return graphql.Null
 	}
 	return v
-}
-
-func (ec *executionContext) unmarshalOUint642ᚕᚖuint64(ctx context.Context, v interface{}) ([]*uint64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]*uint64, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalOUint642ᚖuint64(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalOUint642ᚕᚖuint64(ctx context.Context, sel ast.SelectionSet, v []*uint64) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	for i := range v {
-		ret[i] = ec.marshalOUint642ᚖuint64(ctx, sel, v[i])
-	}
-
-	return ret
 }
 
 func (ec *executionContext) unmarshalOUint642ᚖuint64(ctx context.Context, v interface{}) (*uint64, error) {

@@ -10,7 +10,7 @@ import (
 
 func MarshalBytes(b []byte) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
-		io.WriteString(w, base64.StdEncoding.EncodeToString(b))
+		io.WriteString(w, fmt.Sprintf("\"%s\"", base64.StdEncoding.EncodeToString(b)))
 	})
 }
 

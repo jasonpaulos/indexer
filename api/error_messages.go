@@ -18,6 +18,7 @@ const (
 	errFailedSearchingAccount    = "failed while searching for account"
 	errNoAccountsFound           = "no accounts found for address"
 	errNoAssetsFound             = "no assets found for asset-id"
+	errNoApplicationsFound       = "no application found for application-id"
 	errNoTransactionFound        = "no transaction found for transaction id"
 	errMultipleTransactions      = "multiple transactions found for this txid, please contact us this shouldn't happen"
 	errMultipleAccounts          = "multiple accounts found for this address, please contact us this shouldn't happen"
