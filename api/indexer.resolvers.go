@@ -62,6 +62,10 @@ func (r *accountResolver) CreatedAsset(ctx context.Context, obj *model.Account, 
 	return nil, nil
 }
 
+func (r *accountUpdateResponseResolver) Account(ctx context.Context, obj *model.AccountUpdateResponse) (*model.Account, error) {
+	return getAccount(r.si, ctx, obj.Address)
+}
+
 func (r *applicationLocalStateResolver) Application(ctx context.Context, obj *model.ApplicationLocalState) (*model.Application, error) {
 	p := &generated.SearchForApplicationsParams{
 		ApplicationId: &obj.ID,
@@ -512,12 +516,21 @@ func (r *queryResolver) Transactions(ctx context.Context, address *string, addre
 	}, nil
 }
 
-func (r *subscriptionResolver) NewBlock(ctx context.Context) (<-chan *model.BlockHeader, error) {
-	return r.addBlockHeaderListener(ctx), nil
+func (r *subscriptionResolver) NewBlock(ctx context.Context) (<-chan *model.Block, error) {
+	return r.addBlockListener(ctx), nil
+}
+
+func (r *subscriptionResolver) AccountUpdate(ctx context.Context, address string) (<-chan *model.AccountUpdateResponse, error) {
+	return r.addAccountListener(ctx, address), nil
 }
 
 // Account returns graphGenerated.AccountResolver implementation.
 func (r *Resolver) Account() graphGenerated.AccountResolver { return &accountResolver{r} }
+
+// AccountUpdateResponse returns graphGenerated.AccountUpdateResponseResolver implementation.
+func (r *Resolver) AccountUpdateResponse() graphGenerated.AccountUpdateResponseResolver {
+	return &accountUpdateResponseResolver{r}
+}
 
 // ApplicationLocalState returns graphGenerated.ApplicationLocalStateResolver implementation.
 func (r *Resolver) ApplicationLocalState() graphGenerated.ApplicationLocalStateResolver {
@@ -551,6 +564,7 @@ func (r *Resolver) Subscription() graphGenerated.SubscriptionResolver {
 }
 
 type accountResolver struct{ *Resolver }
+type accountUpdateResponseResolver struct{ *Resolver }
 type applicationLocalStateResolver struct{ *Resolver }
 type applicationParamsResolver struct{ *Resolver }
 type assetHoldingResolver struct{ *Resolver }

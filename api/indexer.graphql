@@ -460,51 +460,23 @@ type Query {
 }
 
 type Subscription {
-  newBlock: BlockHeader
+  """
+  This subscription will trigger on every new block.
+  """
+  newBlock: Block
+
+  """
+  This subscription will trigger when a new block contains transactions which reference the given account.
+  """
+  accountUpdate(address: Address!): AccountUpdateResponse
 }
 
-"""
-All block information, except the transactions.
-"""
-type BlockHeader {
-  """\[gh\] hash to which this block belongs."""
-  genesisHash: Bytes!
+type AccountUpdateResponse {
+  """The account that was updated."""
+  account: Account!
 
-  """\[gen\] ID to which this block belongs."""
-  genesisId: String!
-
-  """\[prev\] Previous block hash."""
-  previousBlockHash: Bytes!
-
-  """Fields relating to rewards,"""
-  rewards: BlockRewards
-
-  """\[rnd\] Current round on which this block was appended to the chain."""
-  round: Uint64!
-
-  """\[seed\] Sortition seed."""
-  seed: Bytes!
-
-  """\[ts\] Block creation timestamp in seconds since eposh"""
-  timestamp: Uint64!
-
-  """
-  \[txn\] TransactionsRoot authenticates the set of transactions appearing in the block. More specifically, it's the root of a merkle tree whose leaves are the block's Txids, in lexicographic order. For the empty block, it's 0. Note that the TxnRoot does not authenticate the signatures on the transactions, only the transactions themselves. Two blocks with the same transactions but in a different order and with different signatures will have the same TxnRoot.
-  """
-  transactionsRoot: Bytes!
-
-  """
-  \[tc\] TxnCounter counts the number of transactions committed in the ledger, from the time at which support for this feature was introduced.
-  
-  Specifically, TxnCounter is the number of the next transaction that will be committed after this block.  It is 0 when no transactions have ever been committed (since TxnCounter started being supported).
-  """
-  txnCounter: Uint64
-
-  """Fields relating to a protocol upgrade."""
-  upgradeState: BlockUpgradeState
-
-  """Fields relating to voting for a protocol upgrade."""
-  upgradeVote: BlockUpgradeVote
+  """The transactions that caused the update."""
+  transactions: [Transaction!]!
 }
 
 """

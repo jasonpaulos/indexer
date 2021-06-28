@@ -3,7 +3,11 @@ package helper
 import (
 	"encoding/base64"
 	"fmt"
+	"sort"
 	"strings"
+
+	"github.com/algorand/go-algorand-sdk/crypto"
+	sdk_types "github.com/algorand/go-algorand-sdk/types"
 
 	"github.com/algorand/indexer/api/generated/v2"
 	"github.com/algorand/indexer/api/graph/model"
@@ -39,6 +43,21 @@ func uint64SliceOrDefault(p *[]uint64) []uint64 {
 	return *p
 }
 
+func bytePtr(x []byte) *[]byte {
+	if len(x) == 0 {
+		return nil
+	}
+
+	// Don't return if it's all zero.
+	for _, v := range x {
+		if v != 0 {
+			return &x
+		}
+	}
+
+	return nil
+}
+
 func byteSliceOrDefault(p *[]byte) []byte {
 	if p == nil {
 		return []byte{}
@@ -55,6 +74,15 @@ func stringSliceOrDefault(p *[]string) []string {
 		return []string{}
 	}
 	return *p
+}
+
+func addrPtr(x sdk_types.Address) *string {
+	if x.IsZero() {
+		return nil
+	}
+	out := new(string)
+	*out = x.String()
+	return out
 }
 
 func InternalSigTypeToModel(sigType *string) *model.SigType {
@@ -142,6 +170,25 @@ func ModalTxTypeToInternal(txType *model.TxType) *string {
 
 	result := strings.ToLower(txType.String())
 	return &result
+}
+
+func InternalSDKOnCompletionToModel(oc sdk_types.OnCompletion) model.OnCompletion {
+	switch oc {
+	case sdk_types.NoOpOC:
+		return model.OnCompletionNoop
+	case sdk_types.OptInOC:
+		return model.OnCompletionOptin
+	case sdk_types.CloseOutOC:
+		return model.OnCompletionCloseout
+	case sdk_types.ClearStateOC:
+		return model.OnCompletionClear
+	case sdk_types.UpdateApplicationOC:
+		return model.OnCompletionUpdate
+	case sdk_types.DeleteApplicationOC:
+		return model.OnCompletionDelete
+	default:
+		panic(fmt.Errorf("Unexpected OnCompletion value: %d", oc))
+	}
 }
 
 func InternalOnCompletionToModel(oc generated.OnCompletion) model.OnCompletion {
@@ -478,7 +525,7 @@ func InternalBlockUpgradeVoteToModel(vote *generated.BlockUpgradeVote) *model.Bl
 	}
 }
 
-func InternalBlockHeaderToModel(header types.BlockHeader) *model.BlockHeader {
+func InternalBlockHeaderAndTxnsToModel(header types.BlockHeader, txns []types.SignedTxnWithAD, createdPrimitives map[int]uint64) *model.Block {
 	rewards := model.BlockRewards{
 		FeeSink:                 header.FeeSink.String(),
 		RewardsCalculationRound: uint64(header.RewardsRecalculationRound),
@@ -502,7 +549,7 @@ func InternalBlockHeaderToModel(header types.BlockHeader) *model.BlockHeader {
 		UpgradePropose: strPtr(string(header.UpgradePropose)),
 	}
 
-	return &model.BlockHeader{
+	ret := model.Block{
 		GenesisHash:       header.GenesisHash[:],
 		GenesisID:         header.GenesisID,
 		PreviousBlockHash: header.Branch[:],
@@ -515,6 +562,266 @@ func InternalBlockHeaderToModel(header types.BlockHeader) *model.BlockHeader {
 		UpgradeState:      &upgradeState,
 		UpgradeVote:       &upgradeVote,
 	}
+
+	results := make([]model.Transaction, len(txns))
+	for i, txn := range txns {
+		created := createdPrimitives[i]
+		results[i] = InternalSignedTxnWithADToModel(txn, created, uint64(header.Round), i, uint64(header.TimeStamp))
+	}
+
+	ret.Transactions = results
+	return &ret
+}
+
+func msigToTransactionMsig(msig sdk_types.MultisigSig) *model.TransactionSignatureMultisig {
+	if msig.Blank() {
+		return nil
+	}
+
+	subsigs := make([]model.TransactionSignatureMultisigSubsignature, 0)
+	for _, subsig := range msig.Subsigs {
+		subsigs = append(subsigs, model.TransactionSignatureMultisigSubsignature{
+			PublicKey: subsig.Key[:],
+			Signature: subsig.Sig[:],
+		})
+	}
+
+	ret := model.TransactionSignatureMultisig{
+		Subsignature: subsigs,
+		Threshold:    uint64Ptr(uint64(msig.Threshold)),
+		Version:      uint64Ptr(uint64(msig.Version)),
+	}
+	return &ret
+}
+
+func lsigToTransactionLsig(lsig sdk_types.LogicSig) *model.TransactionSignatureLogicsig {
+	if lsig.Blank() {
+		return nil
+	}
+
+	ret := model.TransactionSignatureLogicsig{
+		Args:              lsig.Args,
+		Logic:             lsig.Logic,
+		MultisigSignature: msigToTransactionMsig(lsig.Msig),
+		Signature:         lsig.Sig[:],
+	}
+
+	return &ret
+}
+
+func stateDeltaToStateDelta(d types.StateDelta) []model.EvalDeltaKeyValue {
+	if len(d) == 0 {
+		return nil
+	}
+	var delta []model.EvalDeltaKeyValue
+	keys := make([]string, 0)
+	for k := range d {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := d[k]
+		delta = append(delta, model.EvalDeltaKeyValue{
+			Key: []byte(k),
+			Value: &model.EvalDelta{
+				Action: InternalDeltaActionToModel(uint64(v.Action)),
+				Bytes:  v.Bytes,
+				Uint:   uint64Ptr(v.Uint),
+			},
+		})
+	}
+	return delta
+}
+
+func InternalSignedTxnWithADToModel(stxn types.SignedTxnWithAD, createdPrimitive uint64, round uint64, intra int, roundTime uint64) model.Transaction {
+	var payment *model.TransactionPayment
+	var keyreg *model.TransactionKeyreg
+	var assetConfig *model.TransactionAssetConfig
+	var assetFreeze *model.TransactionAssetFreeze
+	var assetTransfer *model.TransactionAssetTransfer
+	var application *model.TransactionApplication
+
+	switch stxn.Txn.Type {
+	case sdk_types.PaymentTx:
+		p := model.TransactionPayment{
+			CloseAmount:      uint64Ptr(uint64(stxn.ApplyData.ClosingAmount)),
+			CloseRemainderTo: addrPtr(stxn.Txn.CloseRemainderTo),
+			Receiver:         stxn.Txn.Receiver.String(),
+			Amount:           uint64(stxn.Txn.Amount),
+		}
+		payment = &p
+	case sdk_types.KeyRegistrationTx:
+		k := model.TransactionKeyreg{
+			NonParticipation:          stxn.Txn.Nonparticipation,
+			SelectionParticipationKey: stxn.Txn.SelectionPK[:],
+			VoteFirstValid:            uint64Ptr(uint64(stxn.Txn.VoteFirst)),
+			VoteLastValid:             uint64Ptr(uint64(stxn.Txn.VoteLast)),
+			VoteKeyDilution:           uint64Ptr(stxn.Txn.VoteKeyDilution),
+			VoteParticipationKey:      stxn.Txn.VotePK[:],
+		}
+		keyreg = &k
+	case sdk_types.AssetConfigTx:
+		assetParams := model.AssetParams{
+			Clawback:      addrPtr(stxn.Txn.AssetParams.Clawback),
+			Creator:       stxn.Txn.Sender.String(),
+			Decimals:      uint64(stxn.Txn.AssetParams.Decimals),
+			DefaultFrozen: stxn.Txn.AssetParams.DefaultFrozen,
+			Freeze:        addrPtr(stxn.Txn.AssetParams.Freeze),
+			Manager:       addrPtr(stxn.Txn.AssetParams.Manager),
+			MetadataHash:  stxn.Txn.AssetParams.MetadataHash[:],
+			Name:          strPtr(stxn.Txn.AssetParams.AssetName),
+			Reserve:       addrPtr(stxn.Txn.AssetParams.Reserve),
+			Total:         stxn.Txn.AssetParams.Total,
+			UnitName:      strPtr(stxn.Txn.AssetParams.UnitName),
+			URL:           strPtr(stxn.Txn.AssetParams.URL),
+		}
+		config := model.TransactionAssetConfig{
+			AssetID: uint64Ptr(uint64(stxn.Txn.ConfigAsset)),
+			Params:  &assetParams,
+		}
+		assetConfig = &config
+	case sdk_types.AssetTransferTx:
+		t := model.TransactionAssetTransfer{
+			Amount:      stxn.Txn.AssetAmount,
+			AssetID:     uint64(stxn.Txn.XferAsset),
+			CloseTo:     addrPtr(stxn.Txn.AssetCloseTo),
+			Receiver:    stxn.Txn.AssetReceiver.String(),
+			Sender:      addrPtr(stxn.Txn.AssetSender),
+			CloseAmount: uint64Ptr(stxn.ApplyData.AssetClosingAmount),
+		}
+		assetTransfer = &t
+	case sdk_types.AssetFreezeTx:
+		f := model.TransactionAssetFreeze{
+			Address:         stxn.Txn.FreezeAccount.String(),
+			AssetID:         uint64(stxn.Txn.FreezeAsset),
+			NewFreezeStatus: stxn.Txn.AssetFrozen,
+		}
+		assetFreeze = &f
+	case sdk_types.ApplicationCallTx:
+		accts := make([]string, len(stxn.Txn.Accounts))
+		for _, v := range stxn.Txn.Accounts {
+			accts = append(accts, v.String())
+		}
+
+		apps := make([]uint64, len(stxn.Txn.ForeignApps))
+		for _, v := range stxn.Txn.ForeignApps {
+			apps = append(apps, uint64(v))
+		}
+
+		assets := make([]uint64, len(stxn.Txn.ForeignAssets))
+		for _, v := range stxn.Txn.ForeignAssets {
+			assets = append(assets, uint64(v))
+		}
+
+		a := model.TransactionApplication{
+			Accounts:          accts,
+			ApplicationArgs:   stxn.Txn.ApplicationArgs,
+			ApplicationID:     uint64(stxn.Txn.ApplicationID),
+			ApprovalProgram:   stxn.Txn.ApprovalProgram,
+			ClearStateProgram: stxn.Txn.ClearStateProgram,
+			ForeignApps:       apps,
+			ForeignAssets:     assets,
+			GlobalStateSchema: &model.StateSchema{
+				NumByteSlice: stxn.Txn.GlobalStateSchema.NumByteSlice,
+				NumUint:      stxn.Txn.GlobalStateSchema.NumUint,
+			},
+			LocalStateSchema: &model.StateSchema{
+				NumByteSlice: stxn.Txn.LocalStateSchema.NumByteSlice,
+				NumUint:      stxn.Txn.LocalStateSchema.NumUint,
+			},
+			OnCompletion:      InternalSDKOnCompletionToModel(stxn.Txn.OnCompletion),
+			ExtraProgramPages: uint64Ptr(uint64(stxn.Txn.ExtraProgramPages)),
+		}
+
+		application = &a
+	}
+
+	sig := model.TransactionSignature{
+		Logicsig: lsigToTransactionLsig(stxn.Lsig),
+		Multisig: msigToTransactionMsig(stxn.Msig),
+		Sig:      stxn.Sig[:],
+	}
+
+	var localStateDelta []model.AccountStateDelta
+	type tuple struct {
+		key     uint64
+		address types.Address
+	}
+	if len(stxn.ApplyData.EvalDelta.LocalDeltas) > 0 {
+		keys := make([]tuple, 0)
+		for k := range stxn.ApplyData.EvalDelta.LocalDeltas {
+			if k == 0 {
+				keys = append(keys, tuple{
+					key:     0,
+					address: stxn.Txn.Sender,
+				})
+			} else {
+				addr := types.Address{}
+				copy(addr[:], stxn.Txn.Accounts[k-1][:])
+				keys = append(keys, tuple{
+					key:     k,
+					address: addr,
+				})
+			}
+		}
+		sort.Slice(keys, func(i, j int) bool { return keys[i].key < keys[j].key })
+		localStateDelta := make([]model.AccountStateDelta, 0)
+		for _, k := range keys {
+			v := stxn.ApplyData.EvalDelta.LocalDeltas[k.key]
+			delta := stateDeltaToStateDelta(v)
+			if delta != nil {
+				localStateDelta = append(localStateDelta, model.AccountStateDelta{
+					Address: k.address.String(),
+					Delta:   delta,
+				})
+			}
+		}
+	}
+
+	txn := model.Transaction{
+		ApplicationTransaction:   application,
+		AssetConfigTransaction:   assetConfig,
+		AssetFreezeTransaction:   assetFreeze,
+		AssetTransferTransaction: assetTransfer,
+		PaymentTransaction:       payment,
+		KeyregTransaction:        keyreg,
+		ClosingAmount:            uint64Ptr(uint64(stxn.ClosingAmount)),
+		ConfirmedRound:           uint64Ptr(round),
+		IntraRoundOffset:         uint64Ptr(uint64(intra)),
+		RoundTime:                uint64Ptr(roundTime),
+		Fee:                      uint64(stxn.Txn.Fee),
+		FirstValid:               uint64(stxn.Txn.FirstValid),
+		GenesisHash:              stxn.SignedTxn.Txn.GenesisHash[:],
+		GenesisID:                strPtr(stxn.SignedTxn.Txn.GenesisID),
+		Group:                    stxn.Txn.Group[:],
+		LastValid:                uint64(stxn.Txn.LastValid),
+		Lease:                    stxn.Txn.Lease[:],
+		Note:                     stxn.Txn.Note[:],
+		Sender:                   stxn.Txn.Sender.String(),
+		ReceiverRewards:          uint64Ptr(uint64(stxn.ReceiverRewards)),
+		CloseRewards:             uint64Ptr(uint64(stxn.CloseRewards)),
+		SenderRewards:            uint64Ptr(uint64(stxn.SenderRewards)),
+		TxType:                   *InternalTxTypeToModel(strPtr(string(stxn.Txn.Type))),
+		Signature:                &sig,
+		ID:                       crypto.TransactionIDString(stxn.Txn),
+		RekeyTo:                  addrPtr(stxn.Txn.RekeyTo),
+		GlobalStateDelta:         stateDeltaToStateDelta(stxn.EvalDelta.GlobalDelta),
+		LocalStateDelta:          localStateDelta,
+	}
+
+	if stxn.Txn.Type == sdk_types.AssetConfigTx {
+		if txn.AssetConfigTransaction != nil && txn.AssetConfigTransaction.AssetID != nil && *txn.AssetConfigTransaction.AssetID == 0 {
+			txn.CreatedAssetID = uint64Ptr(createdPrimitive)
+		}
+	}
+
+	if stxn.Txn.Type == sdk_types.ApplicationCallTx {
+		if txn.ApplicationTransaction != nil && txn.ApplicationTransaction.ApplicationID == 0 {
+			txn.CreatedApplicationID = uint64Ptr(createdPrimitive)
+		}
+	}
+
+	return txn
 }
 
 func InternalBlockToModel(blk generated.Block) *model.Block {

@@ -38,7 +38,7 @@ func (db *dummyIndexerDb) CommitBlock(round uint64, timestamp int64, rewardsleve
 }
 
 // SetBlockCommitHook is part of idb.IndexerDB
-func (db *dummyIndexerDb) SetBlockCommitHook(onBlockCommit func(types.BlockHeader)) {
+func (db *dummyIndexerDb) SetBlockCommitHook(onBlockCommit func(header types.BlockHeader, txns []types.SignedTxnWithAD, createdPrimitives map[int]uint64, participants map[string][]int)) {
 	panic("SetBlockCommitHook called on dummyIndexerDb")
 }
 

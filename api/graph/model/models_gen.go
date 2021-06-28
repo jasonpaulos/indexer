@@ -325,34 +325,6 @@ type Block struct {
 	UpgradeVote *BlockUpgradeVote `json:"upgradeVote"`
 }
 
-// All block information, except the transactions.
-type BlockHeader struct {
-	// \[gh\] hash to which this block belongs.
-	GenesisHash []byte `json:"genesisHash"`
-	// \[gen\] ID to which this block belongs.
-	GenesisID string `json:"genesisId"`
-	// \[prev\] Previous block hash.
-	PreviousBlockHash []byte `json:"previousBlockHash"`
-	// Fields relating to rewards,
-	Rewards *BlockRewards `json:"rewards"`
-	// \[rnd\] Current round on which this block was appended to the chain.
-	Round uint64 `json:"round"`
-	// \[seed\] Sortition seed.
-	Seed []byte `json:"seed"`
-	// \[ts\] Block creation timestamp in seconds since eposh
-	Timestamp uint64 `json:"timestamp"`
-	// \[txn\] TransactionsRoot authenticates the set of transactions appearing in the block. More specifically, it's the root of a merkle tree whose leaves are the block's Txids, in lexicographic order. For the empty block, it's 0. Note that the TxnRoot does not authenticate the signatures on the transactions, only the transactions themselves. Two blocks with the same transactions but in a different order and with different signatures will have the same TxnRoot.
-	TransactionsRoot []byte `json:"transactionsRoot"`
-	// \[tc\] TxnCounter counts the number of transactions committed in the ledger, from the time at which support for this feature was introduced.
-	//
-	// Specifically, TxnCounter is the number of the next transaction that will be committed after this block.  It is 0 when no transactions have ever been committed (since TxnCounter started being supported).
-	TxnCounter *uint64 `json:"txnCounter"`
-	// Fields relating to a protocol upgrade.
-	UpgradeState *BlockUpgradeState `json:"upgradeState"`
-	// Fields relating to voting for a protocol upgrade.
-	UpgradeVote *BlockUpgradeVote `json:"upgradeVote"`
-}
-
 // Fields relating to rewards,
 type BlockRewards struct {
 	// \[fees\] accepts transaction fees, it can only spend to the incentive pool.

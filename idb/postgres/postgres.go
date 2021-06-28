@@ -100,7 +100,7 @@ type IndexerDb struct {
 
 	accountingLock sync.Mutex
 
-	blockCommitHook     func(types.BlockHeader)
+	blockCommitHook     func(header types.BlockHeader, txns []types.SignedTxnWithAD, createdPrimitives map[int]uint64, participants map[string][]int)
 	blockCommitHookLock sync.Mutex
 }
 
@@ -280,26 +280,53 @@ func (db *IndexerDb) CommitBlock(round uint64, timestamp int64, rewardslevel uin
 	}
 	err = db.txWithRetry(context.Background(), serializable, f)
 
+	txns := make([]types.SignedTxnWithAD, len(db.txrows))
+	createdPrimitives := make(map[int]uint64)
+	for i := range db.txrows {
+		txnBytes := db.txrows[i][5].([]byte)
+		err = msgpack.Decode(txnBytes, &txns[i])
+		if err != nil {
+			// this isn't a critical error, so maybe don't fail?
+			return fmt.Errorf("CommitBlock(): decode SignedTxnWithAD %v", err)
+		}
+
+		assetId := db.txrows[i][3].(uint64)
+		if assetId != 0 {
+			createdPrimitives[i] = assetId
+		}
+	}
+
+	participants := make(map[string][]int)
+	for _, p := range db.txprows {
+		rawAddr := p[0].([]byte)
+		var addr sdk_types.Address
+		copy(addr[:], rawAddr)
+		encodedAddr := addr.String()
+
+		intra := p[2].(int)
+		participants[encodedAddr] = append(participants[encodedAddr], intra)
+	}
+
 	db.txrows = nil
 	db.txprows = nil
 
 	if err != nil {
 		return fmt.Errorf("CommitBlock(): %v", err)
 	}
-	db.callBlockCommitHook(blockHeader)
+	db.callBlockCommitHook(blockHeader, txns, createdPrimitives, participants)
 	return nil
 }
 
-func (db *IndexerDb) callBlockCommitHook(blockHeader types.BlockHeader) {
+func (db *IndexerDb) callBlockCommitHook(header types.BlockHeader, txns []types.SignedTxnWithAD, createdPrimitives map[int]uint64, participants map[string][]int) {
 	db.blockCommitHookLock.Lock()
 	if db.blockCommitHook != nil {
-		db.blockCommitHook(blockHeader)
+		db.blockCommitHook(header, txns, createdPrimitives, participants)
 	}
 	db.blockCommitHookLock.Unlock()
 }
 
 // SetBlockCommitHook is part of idb.IndexerDB
-func (db *IndexerDb) SetBlockCommitHook(onBlockCommit func(types.BlockHeader)) {
+func (db *IndexerDb) SetBlockCommitHook(onBlockCommit func(header types.BlockHeader, txns []types.SignedTxnWithAD, createdPrimitives map[int]uint64, participants map[string][]int)) {
 	db.blockCommitHookLock.Lock()
 	db.blockCommitHook = onBlockCommit
 	db.blockCommitHookLock.Unlock()

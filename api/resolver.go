@@ -18,14 +18,18 @@ import (
 type Resolver struct {
 	si *ServerImplementation
 
-	newBlockHeaderLock      sync.Mutex
-	newBlockHeaderListeners map[chan<- *model.BlockHeader]bool
+	newBlockLock      sync.Mutex
+	newBlockListeners map[chan<- *model.Block]bool
+
+	accountUpdateLock      sync.Mutex
+	accountUpdateListeners map[string][]chan<- *model.AccountUpdateResponse
 }
 
 func NewResolver(si *ServerImplementation) *Resolver {
 	resolver := Resolver{
-		si:                      si,
-		newBlockHeaderListeners: make(map[chan<- *model.BlockHeader]bool),
+		si:                     si,
+		newBlockListeners:      make(map[chan<- *model.Block]bool),
+		accountUpdateListeners: make(map[string][]chan<- *model.AccountUpdateResponse),
 	}
 
 	si.db.SetBlockCommitHook(resolver.onBlockCommit)
@@ -33,34 +37,98 @@ func NewResolver(si *ServerImplementation) *Resolver {
 	return &resolver
 }
 
-func (r *Resolver) addBlockHeaderListener(ctx context.Context) <-chan *model.BlockHeader {
-	events := make(chan *model.BlockHeader, 1)
+func (r *Resolver) addBlockListener(ctx context.Context) <-chan *model.Block {
+	events := make(chan *model.Block, 1)
 
 	go func() {
 		<-ctx.Done()
-		r.newBlockHeaderLock.Lock()
-		delete(r.newBlockHeaderListeners, events)
-		r.newBlockHeaderLock.Unlock()
+		r.newBlockLock.Lock()
+		delete(r.newBlockListeners, events)
+		r.newBlockLock.Unlock()
 		close(events)
 	}()
 
-	r.newBlockHeaderLock.Lock()
-	r.newBlockHeaderListeners[events] = true
-	r.newBlockHeaderLock.Unlock()
+	r.newBlockLock.Lock()
+	r.newBlockListeners[events] = true
+	r.newBlockLock.Unlock()
 
 	return events
 }
 
-func (r *Resolver) onBlockCommit(blockHeader types.BlockHeader) {
-	r.newBlockHeaderLock.Lock()
-	converted := helper.InternalBlockHeaderToModel(blockHeader)
-	for listener := range r.newBlockHeaderListeners {
+func (r *Resolver) addAccountListener(ctx context.Context, address string) <-chan *model.AccountUpdateResponse {
+	events := make(chan *model.AccountUpdateResponse, 1)
+
+	go func() {
+		<-ctx.Done()
+		r.accountUpdateLock.Lock()
+
+		listeners := r.accountUpdateListeners[address]
+		index := -1
+		for i, listener := range listeners {
+			if listener == events {
+				index = i
+				break
+			}
+		}
+
+		if index != -1 {
+			listeners[index] = listeners[len(listeners)-1]
+			listeners = listeners[:len(listeners)-1]
+		}
+
+		if len(listeners) == 0 {
+			delete(r.accountUpdateListeners, address)
+		} else {
+			r.accountUpdateListeners[address] = listeners
+		}
+
+		r.accountUpdateLock.Unlock()
+		close(events)
+	}()
+
+	r.accountUpdateLock.Lock()
+	r.accountUpdateListeners[address] = append(r.accountUpdateListeners[address], events)
+	r.accountUpdateLock.Unlock()
+
+	return events
+}
+
+func (r *Resolver) onBlockCommit(header types.BlockHeader, txns []types.SignedTxnWithAD, createdPrimitives map[int]uint64, participants map[string][]int) {
+	block := helper.InternalBlockHeaderAndTxnsToModel(header, txns, createdPrimitives)
+
+	r.newBlockLock.Lock()
+	for listener := range r.newBlockListeners {
 		select {
-		case listener <- converted:
+		case listener <- block:
 		default:
 			// could not send message to client
-			// remove them from map?
 		}
 	}
-	r.newBlockHeaderLock.Unlock()
+	r.newBlockLock.Unlock()
+
+	r.accountUpdateLock.Lock()
+	for account, listeners := range r.accountUpdateListeners {
+		updates := participants[account]
+		if len(updates) == 0 {
+			continue
+		}
+
+		txns := make([]model.Transaction, len(updates))
+		for i, txnIndex := range updates {
+			txns[i] = block.Transactions[txnIndex]
+		}
+
+		response := model.AccountUpdateResponse{
+			Transactions: txns,
+		}
+
+		for _, listener := range listeners {
+			select {
+			case listener <- &response:
+			default:
+				// could not send message to client
+			}
+		}
+	}
+	r.accountUpdateLock.Unlock()
 }

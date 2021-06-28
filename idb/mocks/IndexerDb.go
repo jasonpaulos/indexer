@@ -318,7 +318,7 @@ func (_m *IndexerDb) Reset() error {
 }
 
 // SetBlockCommitHook provides a mock function with given fields: onBlockCommit
-func (_m *IndexerDb) SetBlockCommitHook(onBlockCommit func(types.BlockHeader)) {
+func (_m *IndexerDb) SetBlockCommitHook(onBlockCommit func(types.BlockHeader, []types.SignedTxnWithAD, map[int]uint64, map[string][]int)) {
 	_m.Called(onBlockCommit)
 }
 
