@@ -18,6 +18,132 @@ import (
 	"github.com/algorand/indexer/idb"
 )
 
+func (r *accountResolver) AppLocalState(ctx context.Context, obj *model.Account, id uint64) (*model.ApplicationLocalState, error) {
+	for _, localState := range obj.AppsLocalState {
+		if localState.ID == id {
+			return &localState, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *accountResolver) Asset(ctx context.Context, obj *model.Account, id uint64) (*model.AssetHolding, error) {
+	for _, holding := range obj.Assets {
+		if holding.ID == id {
+			return &holding, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *accountResolver) AuthAccount(ctx context.Context, obj *model.Account) (*model.Account, error) {
+	if obj.AuthAddr == nil {
+		return nil, nil
+	}
+
+	return getAccount(r.si, ctx, *obj.AuthAddr)
+}
+
+func (r *accountResolver) CreatedApp(ctx context.Context, obj *model.Account, id uint64) (*model.Application, error) {
+	for _, app := range obj.CreatedApps {
+		if app.ID == id {
+			return &app, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *accountResolver) CreatedAsset(ctx context.Context, obj *model.Account, id uint64) (*model.Asset, error) {
+	for _, asset := range obj.CreatedAssets {
+		if asset.ID == id {
+			return &asset, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *applicationLocalStateResolver) Application(ctx context.Context, obj *model.ApplicationLocalState) (*model.Application, error) {
+	p := &generated.SearchForApplicationsParams{
+		ApplicationId: &obj.ID,
+		IncludeAll:    boolPtr(true),
+	}
+	results, _ := r.si.db.Applications(ctx, p)
+	for result := range results {
+		if result.Error != nil {
+			return nil, result.Error
+		}
+		return helper.InternalApplicationToModel(result.Application), nil
+	}
+	return nil, fmt.Errorf("%s: %d", errNoApplicationsFound, obj.ID)
+}
+
+func (r *applicationParamsResolver) CreatorAccount(ctx context.Context, obj *model.ApplicationParams) (*model.Account, error) {
+	return getAccount(r.si, ctx, obj.Creator)
+}
+
+func (r *assetHoldingResolver) Asset(ctx context.Context, obj *model.AssetHolding) (*model.Asset, error) {
+	search := generated.SearchForAssetsParams{
+		AssetId:    uint64Ptr(obj.ID),
+		Limit:      uint64Ptr(1),
+		IncludeAll: boolPtr(true),
+	}
+	options, err := assetParamsToAssetQuery(search)
+	if err != nil {
+		return nil, err
+	}
+
+	assets, _, err := r.si.fetchAssets(ctx, options)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(assets) == 0 {
+		return nil, fmt.Errorf("%s: %d", errNoAssetsFound, obj.ID)
+	}
+
+	if len(assets) > 1 {
+		return nil, fmt.Errorf("%s: %d", errMultipleAssets, obj.ID)
+	}
+
+	return helper.InternalAssetToModel(assets[0]), nil
+}
+
+func (r *assetParamsResolver) ClawbackAccount(ctx context.Context, obj *model.AssetParams) (*model.Account, error) {
+	if obj.Clawback == nil {
+		return nil, nil
+	}
+	return getAccount(r.si, ctx, *obj.Clawback)
+}
+
+func (r *assetParamsResolver) CreatorAccount(ctx context.Context, obj *model.AssetParams) (*model.Account, error) {
+	return getAccount(r.si, ctx, obj.Creator)
+}
+
+func (r *assetParamsResolver) FreezeAccount(ctx context.Context, obj *model.AssetParams) (*model.Account, error) {
+	if obj.Freeze == nil {
+		return nil, nil
+	}
+	return getAccount(r.si, ctx, *obj.Freeze)
+}
+
+func (r *assetParamsResolver) ManagerAccount(ctx context.Context, obj *model.AssetParams) (*model.Account, error) {
+	if obj.Manager == nil {
+		return nil, nil
+	}
+	return getAccount(r.si, ctx, *obj.Manager)
+}
+
+func (r *assetParamsResolver) ReserveAccount(ctx context.Context, obj *model.AssetParams) (*model.Account, error) {
+	if obj.Reserve == nil {
+		return nil, nil
+	}
+	return getAccount(r.si, ctx, *obj.Reserve)
+}
+
+func (r *miniAssetHoldingResolver) Account(ctx context.Context, obj *model.MiniAssetHolding) (*model.Account, error) {
+	return getAccount(r.si, ctx, obj.Address)
+}
+
 func (r *queryResolver) Block(ctx context.Context, roundNumber uint64) (*model.Block, error) {
 	blk, err := r.si.fetchBlock(ctx, roundNumber)
 	if err != nil {
@@ -386,7 +512,39 @@ func (r *queryResolver) Transactions(ctx context.Context, address *string, addre
 	}, nil
 }
 
+// Account returns graphGenerated.AccountResolver implementation.
+func (r *Resolver) Account() graphGenerated.AccountResolver { return &accountResolver{r} }
+
+// ApplicationLocalState returns graphGenerated.ApplicationLocalStateResolver implementation.
+func (r *Resolver) ApplicationLocalState() graphGenerated.ApplicationLocalStateResolver {
+	return &applicationLocalStateResolver{r}
+}
+
+// ApplicationParams returns graphGenerated.ApplicationParamsResolver implementation.
+func (r *Resolver) ApplicationParams() graphGenerated.ApplicationParamsResolver {
+	return &applicationParamsResolver{r}
+}
+
+// AssetHolding returns graphGenerated.AssetHoldingResolver implementation.
+func (r *Resolver) AssetHolding() graphGenerated.AssetHoldingResolver {
+	return &assetHoldingResolver{r}
+}
+
+// AssetParams returns graphGenerated.AssetParamsResolver implementation.
+func (r *Resolver) AssetParams() graphGenerated.AssetParamsResolver { return &assetParamsResolver{r} }
+
+// MiniAssetHolding returns graphGenerated.MiniAssetHoldingResolver implementation.
+func (r *Resolver) MiniAssetHolding() graphGenerated.MiniAssetHoldingResolver {
+	return &miniAssetHoldingResolver{r}
+}
+
 // Query returns graphGenerated.QueryResolver implementation.
 func (r *Resolver) Query() graphGenerated.QueryResolver { return &queryResolver{r} }
 
+type accountResolver struct{ *Resolver }
+type applicationLocalStateResolver struct{ *Resolver }
+type applicationParamsResolver struct{ *Resolver }
+type assetHoldingResolver struct{ *Resolver }
+type assetParamsResolver struct{ *Resolver }
+type miniAssetHoldingResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

@@ -23,6 +23,8 @@ type Account struct {
 	//
 	// Note the raw object uses `map[int] -> AppLocalState` for this type.
 	AppsLocalState []ApplicationLocalState `json:"appsLocalState"`
+	// Get local state for a single application.
+	AppLocalState *ApplicationLocalState `json:"appLocalState"`
 	// \[teap\] the sum of all extra application program pages for this account.
 	AppsTotalExtraPages uint64 `json:"appsTotalExtraPages"`
 	// Specifies maximums on the number of each type that may be stored.
@@ -31,18 +33,26 @@ type Account struct {
 	//
 	// Note the raw object uses `map[int] -> AssetHolding` for this type.
 	Assets []AssetHolding `json:"assets"`
+	// Get a single AssetHolding by ID.
+	Asset *AssetHolding `json:"asset"`
 	// \[spend\] the address against which signing should be checked. If empty, the address of the current account is used. This field can be updated in any transaction by setting the RekeyTo field.
 	AuthAddr *string `json:"authAddr"`
+	// The account behind the authAddr, if any.
+	AuthAccount *Account `json:"authAccount"`
 	// Round during which this account was most recently closed.
 	ClosedAtRound *uint64 `json:"closedAtRound"`
 	// \[appp\] parameters of applications created by this account including app global data.
 	//
 	// Note: the raw account uses `map[int] -> AppParams` for this type.
 	CreatedApps []Application `json:"createdApps"`
+	// Get a single created app by ID.
+	CreatedApp *Application `json:"createdApp"`
 	// \[apar\] parameters of assets created by this account.
 	//
 	// Note: the raw account uses `map[int] -> Asset` for this type.
 	CreatedAssets []Asset `json:"createdAssets"`
+	// Get a single created asset by ID.
+	CreatedAsset *Asset `json:"createdAsset"`
 	// Round during which this account first appeared in a transaction.
 	CreatedAtRound *uint64 `json:"createdAtRound"`
 	// Whether or not this account is currently closed.
@@ -62,10 +72,7 @@ type Account struct {
 	// * msig
 	// * lsig
 	SigType *SigType `json:"sigType"`
-	// \[onl\] delegation status of the account's MicroAlgos
-	// * Offline - indicates that the associated account is delegated.
-	// *  Online  - indicates that the associated account used as part of the delegation pool.
-	// *   NotParticipating - indicates that the associated account is neither a delegator nor a delegate.
+	// \[onl\] delegation status of the account's MicroAlgos.
 	Status AccountStatus `json:"status"`
 }
 
@@ -128,8 +135,10 @@ type ApplicationLocalState struct {
 	ClosedOutAtRound *uint64 `json:"closedOutAtRound"`
 	// Whether or not the application local state is currently deleted from its account.
 	Deleted bool `json:"deleted"`
-	// The application which this local state is for.
+	// The ID of the application which this local state is for.
 	ID uint64 `json:"id"`
+	// The application which this local state is for.
+	Application *Application `json:"application"`
 	// Represents a key-value store for use in an application.
 	KeyValue []TealKeyValue `json:"keyValue"`
 	// Round when the account opted into the application.
@@ -145,9 +154,10 @@ type ApplicationParams struct {
 	// \[clearp\] approval program.
 	ClearStateProgram []byte `json:"clearStateProgram"`
 	// The address that created this application. This is the address where the parameters and global state for this application can be found.
-	Creator *string `json:"creator"`
+	Creator        string   `json:"creator"`
+	CreatorAccount *Account `json:"creatorAccount"`
 	// \[epp\] the amount of extra program pages available to this app.
-	ExtraProgramPages *uint64 `json:"extraProgramPages"`
+	ExtraProgramPages uint64 `json:"extraProgramPages"`
 	// Represents a key-value store for use in an application.
 	GlobalState []TealKeyValue `json:"globalState"`
 	// Specifies maximums on the number of each type that may be stored.
@@ -215,6 +225,8 @@ type AssetHolding struct {
 	Amount uint64 `json:"amount"`
 	// Asset ID of the holding.
 	ID uint64 `json:"id"`
+	// Asset definition for this holding.
+	Asset *Asset `json:"asset"`
 	// Address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
 	Creator string `json:"creator"`
 	// Whether or not the asset holding is currently deleted from its account.
@@ -235,23 +247,28 @@ type AssetHolding struct {
 // data/transactions/asset.go : AssetParams
 type AssetParams struct {
 	// \[c\] Address of account used to clawback holdings of this asset.  If empty, clawback is not permitted.
-	Clawback *string `json:"clawback"`
+	Clawback        *string  `json:"clawback"`
+	ClawbackAccount *Account `json:"clawbackAccount"`
 	// The address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
-	Creator string `json:"creator"`
+	Creator        string   `json:"creator"`
+	CreatorAccount *Account `json:"creatorAccount"`
 	// \[dc\] The number of digits to use after the decimal point when displaying this asset. If 0, the asset is not divisible. If 1, the base unit of the asset is in tenths. If 2, the base unit of the asset is in hundredths, and so on. This value must be between 0 and 19 (inclusive).
 	Decimals uint64 `json:"decimals"`
 	// \[df\] Whether holdings of this asset are frozen by default.
-	DefaultFrozen *bool `json:"defaultFrozen"`
+	DefaultFrozen bool `json:"defaultFrozen"`
 	// \[f\] Address of account used to freeze holdings of this asset.  If empty, freezing is not permitted.
-	Freeze *string `json:"freeze"`
+	Freeze        *string  `json:"freeze"`
+	FreezeAccount *Account `json:"freezeAccount"`
 	// \[m\] Address of account used to manage the keys of this asset and to destroy it.
-	Manager *string `json:"manager"`
+	Manager        *string  `json:"manager"`
+	ManagerAccount *Account `json:"managerAccount"`
 	// \[am\] A commitment to some unspecified asset metadata. The format of this metadata is up to the application.
 	MetadataHash []byte `json:"metadataHash"`
 	// \[an\] Name of this asset, as supplied by the creator.
 	Name *string `json:"name"`
 	// \[r\] Address of account holding reserve (non-minted) units of this asset.
-	Reserve *string `json:"reserve"`
+	Reserve        *string  `json:"reserve"`
+	ReserveAccount *Account `json:"reserveAccount"`
 	// \[t\] The total number of units of this asset.
 	Total uint64 `json:"total"`
 	// \[un\] Name of a unit of this asset, as supplied by the creator.
@@ -351,7 +368,7 @@ type BlockUpgradeVote struct {
 // Represents a TEAL value delta.
 type EvalDelta struct {
 	// \[at\] delta action.
-	Action uint64 `json:"action"`
+	Action DeltaAction `json:"action"`
 	// \[bs\] bytes value.
 	Bytes []byte `json:"bytes"`
 	// \[ui\] uint value.
@@ -378,7 +395,9 @@ type HealthCheck struct {
 // A simplified version of AssetHolding
 type MiniAssetHolding struct {
 	Address string `json:"address"`
-	Amount  uint64 `json:"amount"`
+	// The account this asset holding belongs to.
+	Account *Account `json:"account"`
+	Amount  uint64   `json:"amount"`
 	// Whether or not this asset holding is currently deleted from its account.
 	Deleted bool `json:"deleted"`
 	Frozen  bool `json:"frozen"`
@@ -713,8 +732,11 @@ type TransactionsResponse struct {
 type AccountStatus string
 
 const (
-	AccountStatusOffline          AccountStatus = "OFFLINE"
-	AccountStatusOnline           AccountStatus = "ONLINE"
+	// Offline - indicates that the associated account is delegated.
+	AccountStatusOffline AccountStatus = "OFFLINE"
+	// Online  - indicates that the associated account used as part of the delegation pool.
+	AccountStatusOnline AccountStatus = "ONLINE"
+	// NotParticipating - indicates that the associated account is neither a delegator nor a delegate.
 	AccountStatusNotParticipating AccountStatus = "NOT_PARTICIPATING"
 )
 
@@ -793,6 +815,49 @@ func (e *AddressRole) UnmarshalGQL(v interface{}) error {
 }
 
 func (e AddressRole) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type DeltaAction string
+
+const (
+	DeltaActionSetBytes DeltaAction = "SET_BYTES"
+	DeltaActionSetUINt  DeltaAction = "SET_UINT"
+	DeltaActionDelete   DeltaAction = "DELETE"
+)
+
+var AllDeltaAction = []DeltaAction{
+	DeltaActionSetBytes,
+	DeltaActionSetUINt,
+	DeltaActionDelete,
+}
+
+func (e DeltaAction) IsValid() bool {
+	switch e {
+	case DeltaActionSetBytes, DeltaActionSetUINt, DeltaActionDelete:
+		return true
+	}
+	return false
+}
+
+func (e DeltaAction) String() string {
+	return string(e)
+}
+
+func (e *DeltaAction) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DeltaAction(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DeltaAction", str)
+	}
+	return nil
+}
+
+func (e DeltaAction) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

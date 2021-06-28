@@ -171,6 +171,19 @@ func ModalAddressRoleToInternal(role *model.AddressRole) *string {
 	return &result
 }
 
+func InternalDeltaActionToModel(action uint64) model.DeltaAction {
+	switch action {
+	case 1:
+		return model.DeltaActionSetBytes
+	case 2:
+		return model.DeltaActionSetUINt
+	case 3:
+		return model.DeltaActionDelete
+	default:
+		panic(fmt.Errorf("Unexpected action: %d", action))
+	}
+}
+
 func InternalAccountParticipationToModel(participation *generated.AccountParticipation) *model.AccountParticipation {
 	if participation == nil {
 		return nil
@@ -220,7 +233,7 @@ func InternalAccountToModel(account generated.Account) *model.Account {
 
 func InternalApplicationStateSchemaToModel(schema *generated.ApplicationStateSchema) *model.ApplicationStateSchema {
 	if schema == nil {
-		return nil
+		return &model.ApplicationStateSchema{}
 	}
 
 	return &model.ApplicationStateSchema{
@@ -291,8 +304,8 @@ func InternalApplicationParamsToModel(params generated.ApplicationParams) *model
 	return &model.ApplicationParams{
 		ApprovalProgram:   params.ApprovalProgram,
 		ClearStateProgram: params.ClearStateProgram,
-		Creator:           params.Creator,
-		ExtraProgramPages: params.ExtraProgramPages,
+		Creator:           *params.Creator,
+		ExtraProgramPages: uint64OrDefault(params.ExtraProgramPages),
 		GlobalState:       InternalTealKeyValueStoreToModel(params.GlobalState),
 		GlobalStateSchema: InternalApplicationStateSchemaToModel(params.GlobalStateSchema),
 		LocalStateSchema:  InternalApplicationStateSchemaToModel(params.LocalStateSchema),
@@ -377,7 +390,7 @@ func InternalAssetParamsToModel(params *generated.AssetParams) *model.AssetParam
 		Clawback:      params.Clawback,
 		Creator:       params.Creator,
 		Decimals:      params.Decimals,
-		DefaultFrozen: params.DefaultFrozen,
+		DefaultFrozen: boolOrDefault(params.DefaultFrozen),
 		Freeze:        params.Freeze,
 		Manager:       params.Manager,
 		MetadataHash:  byteSliceOrDefault(params.MetadataHash),
@@ -620,7 +633,7 @@ func InternalEvalDeltaToModel(delta generated.EvalDelta) *model.EvalDelta {
 	}
 
 	return &model.EvalDelta{
-		Action: delta.Action,
+		Action: InternalDeltaActionToModel(delta.Action),
 		Bytes:  bytes,
 		Uint:   delta.Uint,
 	}

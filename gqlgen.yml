@@ -55,3 +55,43 @@ models:
   Time:
     model:
       - github.com/99designs/gqlgen/graphql.Time
+  AssetHolding:
+    fields:
+      asset:
+        resolver: true
+  MiniAssetHolding:
+    fields:
+      account:
+        resolver: true
+  ApplicationLocalState:
+    fields:
+      application:
+        resolver: true
+  Account:
+    fields:
+      authAccount:
+        resolver: true
+      asset:
+        resolver: true
+      createdAsset:
+        resolver: true
+      appLocalState:
+        resolver: true
+      createdApp:
+        resolver: true
+  AssetParams:
+    fields:
+      clawbackAccount:
+        resolver: true
+      creatorAccount:
+        resolver: true
+      freezeAccount:
+        resolver: true
+      managerAccount:
+        resolver: true
+      reserveAccount:
+        resolver: true
+  ApplicationParams:
+    fields:
+      creatorAccount:
+        resolver: true

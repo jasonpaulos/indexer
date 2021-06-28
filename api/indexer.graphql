@@ -836,10 +836,14 @@ type AssetParams {
   """
   clawback: Address
 
+  clawbackAccount: Account
+
   """
   The address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
   """
   creator: Address!
+
+  creatorAccount: Account!
 
   """
   \[dc\] The number of digits to use after the decimal point when displaying this asset. If 0, the asset is not divisible. If 1, the base unit of the asset is in tenths. If 2, the base unit of the asset is in hundredths, and so on. This value must be between 0 and 19 (inclusive).
@@ -847,17 +851,21 @@ type AssetParams {
   decimals: Uint64!
 
   """\[df\] Whether holdings of this asset are frozen by default."""
-  defaultFrozen: Boolean
+  defaultFrozen: Boolean!
 
   """
   \[f\] Address of account used to freeze holdings of this asset.  If empty, freezing is not permitted.
   """
   freeze: Address
 
+  freezeAccount: Account
+
   """
   \[m\] Address of account used to manage the keys of this asset and to destroy it.
   """
   manager: Address
+
+  managerAccount: Account
 
   """
   \[am\] A commitment to some unspecified asset metadata. The format of this metadata is up to the application.
@@ -871,6 +879,8 @@ type AssetParams {
   \[r\] Address of account holding reserve (non-minted) units of this asset.
   """
   reserve: Address
+
+  reserveAccount: Account
 
   """\[t\] The total number of units of this asset."""
   total: Uint64!
@@ -944,13 +954,19 @@ type EvalDeltaKeyValue {
 """Represents a TEAL value delta."""
 type EvalDelta {
   """\[at\] delta action."""
-  action: Uint64!
+  action: DeltaAction!
 
   """\[bs\] bytes value."""
   bytes: Bytes
 
   """\[ui\] uint value."""
   uint: Uint64
+}
+
+enum DeltaAction {
+  SET_BYTES
+  SET_UINT
+  DELETE
 }
 
 """
@@ -1136,7 +1152,7 @@ type BlockUpgradeVote {
 type HealthCheck {
   data: Map
   dbAvailable: Boolean!
-  errors: [String!]
+  errors: [String!]!
   isMigrating: Boolean!
   message: String!
   round: Uint64!
@@ -1183,6 +1199,11 @@ type Account {
   appsLocalState: [ApplicationLocalState!]!
 
   """
+  Get local state for a single application.
+  """
+  appLocalState(id: Uint64!): ApplicationLocalState
+
+  """
   \[teap\] the sum of all extra application program pages for this account.
   """
   appsTotalExtraPages: Uint64!
@@ -1198,9 +1219,19 @@ type Account {
   assets: [AssetHolding!]!
 
   """
+  Get a single AssetHolding by ID.
+  """
+  asset(id: Uint64!): AssetHolding
+
+  """
   \[spend\] the address against which signing should be checked. If empty, the address of the current account is used. This field can be updated in any transaction by setting the RekeyTo field.
   """
   authAddr: Address
+
+  """
+  The account behind the authAddr, if any.
+  """
+  authAccount: Account
 
   """Round during which this account was most recently closed."""
   closedAtRound: Uint64
@@ -1213,11 +1244,21 @@ type Account {
   createdApps: [Application!]!
 
   """
+  Get a single created app by ID.
+  """
+  createdApp(id: Uint64!): Application
+
+  """
   \[apar\] parameters of assets created by this account.
   
   Note: the raw account uses `map[int] -> Asset` for this type.
   """
   createdAssets: [Asset!]!
+
+  """
+  Get a single created asset by ID.
+  """
+  createdAsset(id: Uint64!): Asset
 
   """Round during which this account first appeared in a transaction."""
   createdAtRound: Uint64
@@ -1255,17 +1296,17 @@ type Account {
   sigType: SigType
 
   """
-  \[onl\] delegation status of the account's MicroAlgos
-  * Offline - indicates that the associated account is delegated.
-  *  Online  - indicates that the associated account used as part of the delegation pool.
-  *   NotParticipating - indicates that the associated account is neither a delegator nor a delegate.
+  \[onl\] delegation status of the account's MicroAlgos.
   """
   status: AccountStatus!
 }
 
 enum AccountStatus {
+  """Offline - indicates that the associated account is delegated."""
   OFFLINE
+  """Online  - indicates that the associated account used as part of the delegation pool."""
   ONLINE
+  """NotParticipating - indicates that the associated account is neither a delegator nor a delegate."""
   NOT_PARTICIPATING
 }
 
@@ -1279,8 +1320,11 @@ type ApplicationLocalState {
   """
   deleted: Boolean!
 
-  """The application which this local state is for."""
+  """The ID of the application which this local state is for."""
   id: Uint64!
+
+  """The application which this local state is for."""
+  application: Application!
 
   """Represents a key-value store for use in an application."""
   keyValue: [TealKeyValue!]
@@ -1334,6 +1378,9 @@ type AssetHolding {
   """Asset ID of the holding."""
   id: Uint64!
 
+  """Asset definition for this holding."""
+  asset: Asset!
+
   """
   Address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
   """
@@ -1383,19 +1430,21 @@ type ApplicationParams {
   """
   The address that created this application. This is the address where the parameters and global state for this application can be found.
   """
-  creator: Address
+  creator: Address!
+
+  creatorAccount: Account!
 
   """\[epp\] the amount of extra program pages available to this app."""
-  extraProgramPages: Uint64
+  extraProgramPages: Uint64!
 
   """Represents a key-value store for use in an application."""
-  globalState: [TealKeyValue!]
+  globalState: [TealKeyValue!]!
 
   """Specifies maximums on the number of each type that may be stored."""
-  globalStateSchema: ApplicationStateSchema
+  globalStateSchema: ApplicationStateSchema!
 
   """Specifies maximums on the number of each type that may be stored."""
-  localStateSchema: ApplicationStateSchema
+  localStateSchema: ApplicationStateSchema!
 }
 
 """Specifies both the unique identifier and the parameters for an asset"""
@@ -1508,6 +1557,12 @@ type AssetBalancesResponse {
 """A simplified version of AssetHolding """
 type MiniAssetHolding {
   address: Address!
+
+  """
+  The account this asset holding belongs to.
+  """
+  account: Account!
+
   amount: Uint64!
 
   """
