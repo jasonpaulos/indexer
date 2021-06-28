@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -43,6 +44,7 @@ type ResolverRoot interface {
 	AssetParams() AssetParamsResolver
 	MiniAssetHolding() MiniAssetHoldingResolver
 	Query() QueryResolver
+	Subscription() SubscriptionResolver
 }
 
 type DirectiveRoot struct {
@@ -217,6 +219,20 @@ type ComplexityRoot struct {
 		UpgradeVote       func(childComplexity int) int
 	}
 
+	BlockHeader struct {
+		GenesisHash       func(childComplexity int) int
+		GenesisID         func(childComplexity int) int
+		PreviousBlockHash func(childComplexity int) int
+		Rewards           func(childComplexity int) int
+		Round             func(childComplexity int) int
+		Seed              func(childComplexity int) int
+		Timestamp         func(childComplexity int) int
+		TransactionsRoot  func(childComplexity int) int
+		TxnCounter        func(childComplexity int) int
+		UpgradeState      func(childComplexity int) int
+		UpgradeVote       func(childComplexity int) int
+	}
+
 	BlockRewards struct {
 		FeeSink                 func(childComplexity int) int
 		RewardsCalculationRound func(childComplexity int) int
@@ -289,6 +305,10 @@ type ComplexityRoot struct {
 	StateSchema struct {
 		NumByteSlice func(childComplexity int) int
 		NumUint      func(childComplexity int) int
+	}
+
+	Subscription struct {
+		NewBlock func(childComplexity int) int
 	}
 
 	TealKeyValue struct {
@@ -470,6 +490,9 @@ type QueryResolver interface {
 	Assets(ctx context.Context, id *uint64, creator *string, includeAll *bool, limit *uint64, name *string, next *string, unit *string) (*model.AssetsResponse, error)
 	Transaction(ctx context.Context, id string) (*model.TransactionResponse, error)
 	Transactions(ctx context.Context, address *string, addressRole *model.AddressRole, afterTime *time.Time, applicationID *uint64, assetID *uint64, beforeTime *time.Time, currencyGreaterThan *uint64, currencyLessThan *uint64, excludeCloseTo *bool, limit *uint64, maxRound *uint64, minRound *uint64, next *string, notePrefix []byte, rekeyTo *bool, round *uint64, sigType *model.SigType, txType *model.TxType, id *string) (*model.TransactionsResponse, error)
+}
+type SubscriptionResolver interface {
+	NewBlock(ctx context.Context) (<-chan *model.BlockHeader, error)
 }
 
 type executableSchema struct {
@@ -1305,6 +1328,83 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Block.UpgradeVote(childComplexity), true
 
+	case "BlockHeader.genesisHash":
+		if e.complexity.BlockHeader.GenesisHash == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.GenesisHash(childComplexity), true
+
+	case "BlockHeader.genesisId":
+		if e.complexity.BlockHeader.GenesisID == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.GenesisID(childComplexity), true
+
+	case "BlockHeader.previousBlockHash":
+		if e.complexity.BlockHeader.PreviousBlockHash == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.PreviousBlockHash(childComplexity), true
+
+	case "BlockHeader.rewards":
+		if e.complexity.BlockHeader.Rewards == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.Rewards(childComplexity), true
+
+	case "BlockHeader.round":
+		if e.complexity.BlockHeader.Round == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.Round(childComplexity), true
+
+	case "BlockHeader.seed":
+		if e.complexity.BlockHeader.Seed == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.Seed(childComplexity), true
+
+	case "BlockHeader.timestamp":
+		if e.complexity.BlockHeader.Timestamp == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.Timestamp(childComplexity), true
+
+	case "BlockHeader.transactionsRoot":
+		if e.complexity.BlockHeader.TransactionsRoot == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.TransactionsRoot(childComplexity), true
+
+	case "BlockHeader.txnCounter":
+		if e.complexity.BlockHeader.TxnCounter == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.TxnCounter(childComplexity), true
+
+	case "BlockHeader.upgradeState":
+		if e.complexity.BlockHeader.UpgradeState == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.UpgradeState(childComplexity), true
+
+	case "BlockHeader.upgradeVote":
+		if e.complexity.BlockHeader.UpgradeVote == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.UpgradeVote(childComplexity), true
+
 	case "BlockRewards.feeSink":
 		if e.complexity.BlockRewards.FeeSink == nil {
 			break
@@ -1693,6 +1793,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.StateSchema.NumUint(childComplexity), true
+
+	case "Subscription.newBlock":
+		if e.complexity.Subscription.NewBlock == nil {
+			break
+		}
+
+		return e.complexity.Subscription.NewBlock(childComplexity), true
 
 	case "TealKeyValue.key":
 		if e.complexity.TealKeyValue.Key == nil {
@@ -2313,6 +2420,23 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 				Data: buf.Bytes(),
 			}
 		}
+	case ast.Subscription:
+		next := ec._Subscription(ctx, rc.Operation.SelectionSet)
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next()
+
+			if data == nil {
+				return nil
+			}
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
 
 	default:
 		return graphql.OneShot(graphql.ErrorResponse(ctx, "unsupported GraphQL operation"))
@@ -2798,6 +2922,54 @@ type Query {
     """Lookup the specific transaction by ID."""
     id: String
   ): TransactionsResponse
+}
+
+type Subscription {
+  newBlock: BlockHeader
+}
+
+"""
+All block information, except the transactions.
+"""
+type BlockHeader {
+  """\[gh\] hash to which this block belongs."""
+  genesisHash: Bytes!
+
+  """\[gen\] ID to which this block belongs."""
+  genesisId: String!
+
+  """\[prev\] Previous block hash."""
+  previousBlockHash: Bytes!
+
+  """Fields relating to rewards,"""
+  rewards: BlockRewards
+
+  """\[rnd\] Current round on which this block was appended to the chain."""
+  round: Uint64!
+
+  """\[seed\] Sortition seed."""
+  seed: Bytes!
+
+  """\[ts\] Block creation timestamp in seconds since eposh"""
+  timestamp: Uint64!
+
+  """
+  \[txn\] TransactionsRoot authenticates the set of transactions appearing in the block. More specifically, it's the root of a merkle tree whose leaves are the block's Txids, in lexicographic order. For the empty block, it's 0. Note that the TxnRoot does not authenticate the signatures on the transactions, only the transactions themselves. Two blocks with the same transactions but in a different order and with different signatures will have the same TxnRoot.
+  """
+  transactionsRoot: Bytes!
+
+  """
+  \[tc\] TxnCounter counts the number of transactions committed in the ledger, from the time at which support for this feature was introduced.
+  
+  Specifically, TxnCounter is the number of the next transaction that will be committed after this block.  It is 0 when no transactions have ever been committed (since TxnCounter started being supported).
+  """
+  txnCounter: Uint64
+
+  """Fields relating to a protocol upgrade."""
+  upgradeState: BlockUpgradeState
+
+  """Fields relating to voting for a protocol upgrade."""
+  upgradeVote: BlockUpgradeVote
 }
 
 """
@@ -8851,6 +9023,379 @@ func (ec *executionContext) _Block_upgradeVote(ctx context.Context, field graphq
 	return ec.marshalOBlockUpgradeVote2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐBlockUpgradeVote(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _BlockHeader_genesisHash(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GenesisHash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]byte)
+	fc.Result = res
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_genesisId(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GenesisID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_previousBlockHash(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PreviousBlockHash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]byte)
+	fc.Result = res
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_rewards(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Rewards, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.BlockRewards)
+	fc.Result = res
+	return ec.marshalOBlockRewards2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐBlockRewards(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_round(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Round, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNUint642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_seed(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Seed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]byte)
+	fc.Result = res
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_timestamp(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Timestamp, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNUint642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_transactionsRoot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TransactionsRoot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]byte)
+	fc.Result = res
+	return ec.marshalNBytes2ᚕbyte(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_txnCounter(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TxnCounter, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*uint64)
+	fc.Result = res
+	return ec.marshalOUint642ᚖuint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_upgradeState(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpgradeState, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.BlockUpgradeState)
+	fc.Result = res
+	return ec.marshalOBlockUpgradeState2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐBlockUpgradeState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_upgradeVote(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpgradeVote, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.BlockUpgradeVote)
+	fc.Result = res
+	return ec.marshalOBlockUpgradeVote2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐBlockUpgradeVote(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _BlockRewards_feeSink(ctx context.Context, field graphql.CollectedField, obj *model.BlockRewards) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -10574,6 +11119,48 @@ func (ec *executionContext) _StateSchema_numUint(ctx context.Context, field grap
 	res := resTmp.(uint64)
 	fc.Result = res
 	return ec.marshalNUint642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Subscription_newBlock(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().NewBlock(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		return nil
+	}
+	return func() graphql.Marshaler {
+		res, ok := <-resTmp.(<-chan *model.BlockHeader)
+		if !ok {
+			return nil
+		}
+		return graphql.WriterFunc(func(w io.Writer) {
+			w.Write([]byte{'{'})
+			graphql.MarshalString(field.Alias).MarshalGQL(w)
+			w.Write([]byte{':'})
+			ec.marshalOBlockHeader2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐBlockHeader(ctx, field.Selections, res).MarshalGQL(w)
+			w.Write([]byte{'}'})
+		})
+	}
 }
 
 func (ec *executionContext) _TealKeyValue_key(ctx context.Context, field graphql.CollectedField, obj *model.TealKeyValue) (ret graphql.Marshaler) {
@@ -15450,6 +16037,71 @@ func (ec *executionContext) _Block(ctx context.Context, sel ast.SelectionSet, ob
 	return out
 }
 
+var blockHeaderImplementors = []string{"BlockHeader"}
+
+func (ec *executionContext) _BlockHeader(ctx context.Context, sel ast.SelectionSet, obj *model.BlockHeader) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, blockHeaderImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BlockHeader")
+		case "genesisHash":
+			out.Values[i] = ec._BlockHeader_genesisHash(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "genesisId":
+			out.Values[i] = ec._BlockHeader_genesisId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "previousBlockHash":
+			out.Values[i] = ec._BlockHeader_previousBlockHash(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "rewards":
+			out.Values[i] = ec._BlockHeader_rewards(ctx, field, obj)
+		case "round":
+			out.Values[i] = ec._BlockHeader_round(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "seed":
+			out.Values[i] = ec._BlockHeader_seed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "timestamp":
+			out.Values[i] = ec._BlockHeader_timestamp(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "transactionsRoot":
+			out.Values[i] = ec._BlockHeader_transactionsRoot(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "txnCounter":
+			out.Values[i] = ec._BlockHeader_txnCounter(ctx, field, obj)
+		case "upgradeState":
+			out.Values[i] = ec._BlockHeader_upgradeState(ctx, field, obj)
+		case "upgradeVote":
+			out.Values[i] = ec._BlockHeader_upgradeVote(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var blockRewardsImplementors = []string{"BlockRewards"}
 
 func (ec *executionContext) _BlockRewards(ctx context.Context, sel ast.SelectionSet, obj *model.BlockRewards) graphql.Marshaler {
@@ -15940,6 +16592,26 @@ func (ec *executionContext) _StateSchema(ctx context.Context, sel ast.SelectionS
 		return graphql.Null
 	}
 	return out
+}
+
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func() graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		ec.Errorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	switch fields[0].Name {
+	case "newBlock":
+		return ec._Subscription_newBlock(ctx, fields[0])
+	default:
+		panic("unknown field " + strconv.Quote(fields[0].Name))
+	}
 }
 
 var tealKeyValueImplementors = []string{"TealKeyValue"}
@@ -17907,6 +18579,13 @@ func (ec *executionContext) marshalOBlock2ᚖgithubᚗcomᚋalgorandᚋindexer�
 		return graphql.Null
 	}
 	return ec._Block(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOBlockHeader2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐBlockHeader(ctx context.Context, sel ast.SelectionSet, v *model.BlockHeader) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._BlockHeader(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOBlockRewards2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐBlockRewards(ctx context.Context, sel ast.SelectionSet, v *model.BlockRewards) graphql.Marshaler {

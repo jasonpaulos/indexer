@@ -83,6 +83,8 @@ type IndexerDb interface {
 	AddTransaction(round uint64, intra int, txtypeenum int, assetid uint64, txn types.SignedTxnWithAD, participation [][]byte) error
 	CommitBlock(round uint64, timestamp int64, rewardslevel uint64, headerbytes []byte) error
 
+	SetBlockCommitHook(onBlockCommit func(types.BlockHeader))
+
 	LoadGenesis(genesis types.Genesis) (err error)
 
 	// GetMaxRoundAccounted returns ErrorNotInitialized if there are no accounted rounds.

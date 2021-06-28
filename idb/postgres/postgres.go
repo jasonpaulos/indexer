@@ -99,6 +99,9 @@ type IndexerDb struct {
 	migration *migration.Migration
 
 	accountingLock sync.Mutex
+
+	blockCommitHook     func(types.BlockHeader)
+	blockCommitHookLock sync.Mutex
 }
 
 // A helper function that retries the function `f` in case the database transaction in it
@@ -190,7 +193,7 @@ func (db *IndexerDb) AddTransaction(round uint64, intra int, txtypeenum int, ass
 	return nil
 }
 
-func (db *IndexerDb) commitBlock(tx *sql.Tx, round uint64, timestamp int64, rewardslevel uint64, headerbytes []byte) error {
+func (db *IndexerDb) commitBlock(tx *sql.Tx, round uint64, timestamp int64, rewardslevel uint64, headerjson []byte) error {
 	defer tx.Rollback() // ignored if already committed
 
 	addtx, err := tx.Prepare(`COPY txn (round, intra, typeenum, asset, txid, txnbytes, txn) FROM STDIN`)
@@ -255,12 +258,6 @@ func (db *IndexerDb) commitBlock(tx *sql.Tx, round uint64, timestamp int64, rewa
 		return fmt.Errorf("during addtxp close %v", err)
 	}
 
-	var blockHeader types.BlockHeader
-	err = msgpack.Decode(headerbytes, &blockHeader)
-	if err != nil {
-		return fmt.Errorf("decode header %v", err)
-	}
-	headerjson := encoding.EncodeJSON(blockHeader)
 	_, err = tx.Exec(`INSERT INTO block_header (round, realtime, rewardslevel, header) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`, round, time.Unix(timestamp, 0).UTC(), rewardslevel, headerjson)
 	if err != nil {
 		return fmt.Errorf("put block_header %v    %#v", err, err)
@@ -271,10 +268,17 @@ func (db *IndexerDb) commitBlock(tx *sql.Tx, round uint64, timestamp int64, rewa
 
 // CommitBlock is part of idb.IndexerDB
 func (db *IndexerDb) CommitBlock(round uint64, timestamp int64, rewardslevel uint64, headerbytes []byte) error {
-	f := func(ctx context.Context, tx *sql.Tx) error {
-		return db.commitBlock(tx, round, timestamp, rewardslevel, headerbytes)
+	var blockHeader types.BlockHeader
+	err := msgpack.Decode(headerbytes, &blockHeader)
+	if err != nil {
+		return fmt.Errorf("CommitBlock(): decode header %v", err)
 	}
-	err := db.txWithRetry(context.Background(), serializable, f)
+	headerjson := encoding.EncodeJSON(blockHeader)
+
+	f := func(ctx context.Context, tx *sql.Tx) error {
+		return db.commitBlock(tx, round, timestamp, rewardslevel, headerjson)
+	}
+	err = db.txWithRetry(context.Background(), serializable, f)
 
 	db.txrows = nil
 	db.txprows = nil
@@ -282,7 +286,23 @@ func (db *IndexerDb) CommitBlock(round uint64, timestamp int64, rewardslevel uin
 	if err != nil {
 		return fmt.Errorf("CommitBlock(): %v", err)
 	}
+	db.callBlockCommitHook(blockHeader)
 	return nil
+}
+
+func (db *IndexerDb) callBlockCommitHook(blockHeader types.BlockHeader) {
+	db.blockCommitHookLock.Lock()
+	if db.blockCommitHook != nil {
+		db.blockCommitHook(blockHeader)
+	}
+	db.blockCommitHookLock.Unlock()
+}
+
+// SetBlockCommitHook is part of idb.IndexerDB
+func (db *IndexerDb) SetBlockCommitHook(onBlockCommit func(types.BlockHeader)) {
+	db.blockCommitHookLock.Lock()
+	db.blockCommitHook = onBlockCommit
+	db.blockCommitHookLock.Unlock()
 }
 
 // GetDefaultFrozen get {assetid:default frozen, ...} for all assets, needed by accounting.

@@ -7,13 +7,22 @@ import (
 
 	"github.com/algorand/indexer/api/generated/v2"
 	"github.com/algorand/indexer/api/graph/model"
+	"github.com/algorand/indexer/types"
 )
+
+func boolPtr(b bool) *bool {
+	return &b
+}
 
 func boolOrDefault(p *bool) bool {
 	if p == nil {
 		return false
 	}
 	return *p
+}
+
+func uint64Ptr(i uint64) *uint64 {
+	return &i
 }
 
 func uint64OrDefault(p *uint64) uint64 {
@@ -35,6 +44,10 @@ func byteSliceOrDefault(p *[]byte) []byte {
 		return []byte{}
 	}
 	return *p
+}
+
+func strPtr(s string) *string {
+	return &s
 }
 
 func stringSliceOrDefault(p *[]string) []string {
@@ -462,6 +475,45 @@ func InternalBlockUpgradeVoteToModel(vote *generated.BlockUpgradeVote) *model.Bl
 		UpgradeApprove: vote.UpgradeApprove,
 		UpgradeDelay:   vote.UpgradeDelay,
 		UpgradePropose: vote.UpgradePropose,
+	}
+}
+
+func InternalBlockHeaderToModel(header types.BlockHeader) *model.BlockHeader {
+	rewards := model.BlockRewards{
+		FeeSink:                 header.FeeSink.String(),
+		RewardsCalculationRound: uint64(header.RewardsRecalculationRound),
+		RewardsLevel:            header.RewardsLevel,
+		RewardsPool:             header.RewardsPool.String(),
+		RewardsRate:             header.RewardsRate,
+		RewardsResidue:          header.RewardsResidue,
+	}
+
+	upgradeState := model.BlockUpgradeState{
+		CurrentProtocol:        string(header.CurrentProtocol),
+		NextProtocol:           strPtr(string(header.NextProtocol)),
+		NextProtocolApprovals:  uint64Ptr(header.NextProtocolApprovals),
+		NextProtocolSwitchOn:   uint64Ptr(uint64(header.NextProtocolSwitchOn)),
+		NextProtocolVoteBefore: uint64Ptr(uint64(header.NextProtocolVoteBefore)),
+	}
+
+	upgradeVote := model.BlockUpgradeVote{
+		UpgradeApprove: boolPtr(header.UpgradeApprove),
+		UpgradeDelay:   uint64Ptr(uint64(header.UpgradeDelay)),
+		UpgradePropose: strPtr(string(header.UpgradePropose)),
+	}
+
+	return &model.BlockHeader{
+		GenesisHash:       header.GenesisHash[:],
+		GenesisID:         header.GenesisID,
+		PreviousBlockHash: header.Branch[:],
+		Rewards:           &rewards,
+		Round:             uint64(header.Round),
+		Seed:              header.Seed[:],
+		Timestamp:         uint64(header.TimeStamp),
+		TransactionsRoot:  header.TxnRoot[:],
+		TxnCounter:        uint64Ptr(header.TxnCounter),
+		UpgradeState:      &upgradeState,
+		UpgradeVote:       &upgradeVote,
 	}
 }
 

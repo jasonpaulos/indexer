@@ -512,6 +512,10 @@ func (r *queryResolver) Transactions(ctx context.Context, address *string, addre
 	}, nil
 }
 
+func (r *subscriptionResolver) NewBlock(ctx context.Context) (<-chan *model.BlockHeader, error) {
+	return r.addBlockHeaderListener(ctx), nil
+}
+
 // Account returns graphGenerated.AccountResolver implementation.
 func (r *Resolver) Account() graphGenerated.AccountResolver { return &accountResolver{r} }
 
@@ -541,6 +545,11 @@ func (r *Resolver) MiniAssetHolding() graphGenerated.MiniAssetHoldingResolver {
 // Query returns graphGenerated.QueryResolver implementation.
 func (r *Resolver) Query() graphGenerated.QueryResolver { return &queryResolver{r} }
 
+// Subscription returns graphGenerated.SubscriptionResolver implementation.
+func (r *Resolver) Subscription() graphGenerated.SubscriptionResolver {
+	return &subscriptionResolver{r}
+}
+
 type accountResolver struct{ *Resolver }
 type applicationLocalStateResolver struct{ *Resolver }
 type applicationParamsResolver struct{ *Resolver }
@@ -548,3 +557,4 @@ type assetHoldingResolver struct{ *Resolver }
 type assetParamsResolver struct{ *Resolver }
 type miniAssetHoldingResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }

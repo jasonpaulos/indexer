@@ -37,6 +37,11 @@ func (db *dummyIndexerDb) CommitBlock(round uint64, timestamp int64, rewardsleve
 	return nil
 }
 
+// SetBlockCommitHook is part of idb.IndexerDB
+func (db *dummyIndexerDb) SetBlockCommitHook(onBlockCommit func(types.BlockHeader)) {
+	panic("SetBlockCommitHook called on dummyIndexerDb")
+}
+
 // LoadGenesis is part of idb.IndexerDB
 func (db *dummyIndexerDb) LoadGenesis(genesis types.Genesis) (err error) {
 	return nil

@@ -10,13 +10,20 @@ import (
 // RegisterHandlers adds each server route to the EchoRouter.
 func RegisterGraphQLHandlers(router *echo.Echo, si *ServerImplementation, m ...echo.MiddlewareFunc) {
 
+	resolver := NewResolver(si)
+
 	graphqlHandler := handler.NewDefaultServer(
 		generated.NewExecutableSchema(
-			generated.Config{Resolvers: &Resolver{si: si}},
+			generated.Config{Resolvers: resolver},
 		),
 	)
 
 	router.POST("/query", func(c echo.Context) error {
+		graphqlHandler.ServeHTTP(c.Response(), c.Request())
+		return nil
+	}, m...)
+
+	router.GET("/query", func(c echo.Context) error {
 		graphqlHandler.ServeHTTP(c.Response(), c.Request())
 		return nil
 	}, m...)
