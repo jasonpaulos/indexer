@@ -2444,14 +2444,14 @@ type Query {
   block(
     """Round number"""
     roundNumber: Uint64!
-  ): Block
+  ): Block!
 
   """
   Returns 200 if healthy.
   
   Equivalent to GET /health
   """
-  healthCheck: HealthCheck
+  healthCheck: HealthCheck!
 
   """
   Lookup account information.
@@ -2469,7 +2469,7 @@ type Query {
 
     """Include results for the specified round."""
     round: Uint64
-  ): AccountResponse
+  ): AccountResponse!
 
   """
   Lookup account transactions.
@@ -2537,7 +2537,7 @@ type Query {
 
     """Lookup the specific transaction by ID."""
     id: String
-  ): TransactionsResponse
+  ): TransactionsResponse!
 
   """
   Search for accounts.
@@ -2581,7 +2581,7 @@ type Query {
     Include results for the specified round. For performance reasons, this parameter may be disabled on some configurations.
     """
     round: Uint64
-  ): AccountsResponse
+  ): AccountsResponse!
 
   """
   Lookup application.
@@ -2595,7 +2595,7 @@ type Query {
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
     """
     includeAll: Boolean
-  ): ApplicationResponse
+  ): ApplicationResponse!
 
   """
   Search for applications
@@ -2618,7 +2618,7 @@ type Query {
     The next page of results. Use the next token provided by the previous results.
     """
     next: String
-  ): ApplicationsResponse
+  ): ApplicationsResponse!
 
   """
   Lookup asset information.
@@ -2632,7 +2632,7 @@ type Query {
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
     """
     includeAll: Boolean
-  ): AssetResponse
+  ): AssetResponse!
 
   """
   Lookup the list of accounts who hold this asset 
@@ -2667,7 +2667,7 @@ type Query {
 
     """Include results for the specified round."""
     round: Uint64
-  ): AssetBalancesResponse
+  ): AssetBalancesResponse!
 
   """
   Lookup transactions for an asset.
@@ -2745,7 +2745,7 @@ type Query {
 
     """Lookup the specific transaction by ID."""
     id: String
-  ): TransactionsResponse
+  ): TransactionsResponse!
 
   """
   Search for assets.
@@ -2784,7 +2784,7 @@ type Query {
   
   Equivalent to GET /v2/transactions/{txid}
   """
-  transaction(id: String!): TransactionResponse
+  transaction(id: String!): TransactionResponse!
 
   """
   Search for transactions.
@@ -2867,7 +2867,7 @@ type Query {
 
     """Lookup the specific transaction by ID."""
     id: String
-  ): TransactionsResponse
+  ): TransactionsResponse!
 }
 
 type Subscription {
@@ -2879,7 +2879,7 @@ type Subscription {
   """
   This subscription will trigger when a new block contains transactions which reference the given account.
   """
-  accountUpdate(address: Address!): AccountUpdateResponse
+  accountUpdate(address: Address!): AccountUpdateResponse!
 }
 
 type AccountUpdateResponse {
@@ -10142,11 +10142,14 @@ func (ec *executionContext) _Query_block(ctx context.Context, field graphql.Coll
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.Block)
 	fc.Result = res
-	return ec.marshalOBlock2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐBlock(ctx, field.Selections, res)
+	return ec.marshalNBlock2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐBlock(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_healthCheck(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10174,11 +10177,14 @@ func (ec *executionContext) _Query_healthCheck(ctx context.Context, field graphq
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.HealthCheck)
 	fc.Result = res
-	return ec.marshalOHealthCheck2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐHealthCheck(ctx, field.Selections, res)
+	return ec.marshalNHealthCheck2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐHealthCheck(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_account(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10213,11 +10219,14 @@ func (ec *executionContext) _Query_account(ctx context.Context, field graphql.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.AccountResponse)
 	fc.Result = res
-	return ec.marshalOAccountResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountResponse(ctx, field.Selections, res)
+	return ec.marshalNAccountResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_accountTransactions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10252,11 +10261,14 @@ func (ec *executionContext) _Query_accountTransactions(ctx context.Context, fiel
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.TransactionsResponse)
 	fc.Result = res
-	return ec.marshalOTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionsResponse(ctx, field.Selections, res)
+	return ec.marshalNTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionsResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_accounts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10291,11 +10303,14 @@ func (ec *executionContext) _Query_accounts(ctx context.Context, field graphql.C
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.AccountsResponse)
 	fc.Result = res
-	return ec.marshalOAccountsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountsResponse(ctx, field.Selections, res)
+	return ec.marshalNAccountsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountsResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_application(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10330,11 +10345,14 @@ func (ec *executionContext) _Query_application(ctx context.Context, field graphq
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.ApplicationResponse)
 	fc.Result = res
-	return ec.marshalOApplicationResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationResponse(ctx, field.Selections, res)
+	return ec.marshalNApplicationResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_applications(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10369,11 +10387,14 @@ func (ec *executionContext) _Query_applications(ctx context.Context, field graph
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.ApplicationsResponse)
 	fc.Result = res
-	return ec.marshalOApplicationsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationsResponse(ctx, field.Selections, res)
+	return ec.marshalNApplicationsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationsResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_asset(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10408,11 +10429,14 @@ func (ec *executionContext) _Query_asset(ctx context.Context, field graphql.Coll
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.AssetResponse)
 	fc.Result = res
-	return ec.marshalOAssetResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetResponse(ctx, field.Selections, res)
+	return ec.marshalNAssetResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_assetBalances(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10447,11 +10471,14 @@ func (ec *executionContext) _Query_assetBalances(ctx context.Context, field grap
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.AssetBalancesResponse)
 	fc.Result = res
-	return ec.marshalOAssetBalancesResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetBalancesResponse(ctx, field.Selections, res)
+	return ec.marshalNAssetBalancesResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetBalancesResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_assetTransactions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10486,11 +10513,14 @@ func (ec *executionContext) _Query_assetTransactions(ctx context.Context, field 
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.TransactionsResponse)
 	fc.Result = res
-	return ec.marshalOTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionsResponse(ctx, field.Selections, res)
+	return ec.marshalNTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionsResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_assets(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10564,11 +10594,14 @@ func (ec *executionContext) _Query_transaction(ctx context.Context, field graphq
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.TransactionResponse)
 	fc.Result = res
-	return ec.marshalOTransactionResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionResponse(ctx, field.Selections, res)
+	return ec.marshalNTransactionResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_transactions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10603,11 +10636,14 @@ func (ec *executionContext) _Query_transactions(ctx context.Context, field graph
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.TransactionsResponse)
 	fc.Result = res
-	return ec.marshalOTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionsResponse(ctx, field.Selections, res)
+	return ec.marshalNTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionsResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10825,6 +10861,9 @@ func (ec *executionContext) _Subscription_accountUpdate(ctx context.Context, fie
 		return nil
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return nil
 	}
 	return func() graphql.Marshaler {
@@ -10836,7 +10875,7 @@ func (ec *executionContext) _Subscription_accountUpdate(ctx context.Context, fie
 			w.Write([]byte{'{'})
 			graphql.MarshalString(field.Alias).MarshalGQL(w)
 			w.Write([]byte{':'})
-			ec.marshalOAccountUpdateResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountUpdateResponse(ctx, field.Selections, res).MarshalGQL(w)
+			ec.marshalNAccountUpdateResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountUpdateResponse(ctx, field.Selections, res).MarshalGQL(w)
 			w.Write([]byte{'}'})
 		})
 	}
@@ -16068,6 +16107,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_block(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "healthCheck":
@@ -16079,6 +16121,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_healthCheck(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "account":
@@ -16090,6 +16135,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_account(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "accountTransactions":
@@ -16101,6 +16149,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_accountTransactions(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "accounts":
@@ -16112,6 +16163,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_accounts(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "application":
@@ -16123,6 +16177,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_application(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "applications":
@@ -16134,6 +16191,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_applications(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "asset":
@@ -16145,6 +16205,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_asset(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "assetBalances":
@@ -16156,6 +16219,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_assetBalances(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "assetTransactions":
@@ -16167,6 +16233,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_assetTransactions(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "assets":
@@ -16189,6 +16258,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_transaction(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "transactions":
@@ -16200,6 +16272,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_transactions(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "__type":
@@ -17166,6 +17241,20 @@ func (ec *executionContext) marshalNAccount2ᚖgithubᚗcomᚋalgorandᚋindexer
 	return ec._Account(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAccountResponse2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountResponse(ctx context.Context, sel ast.SelectionSet, v model.AccountResponse) graphql.Marshaler {
+	return ec._AccountResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAccountResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountResponse(ctx context.Context, sel ast.SelectionSet, v *model.AccountResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._AccountResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAccountStateDelta2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStateDelta(ctx context.Context, sel ast.SelectionSet, v model.AccountStateDelta) graphql.Marshaler {
 	return ec._AccountStateDelta(ctx, sel, &v)
 }
@@ -17178,6 +17267,34 @@ func (ec *executionContext) unmarshalNAccountStatus2githubᚗcomᚋalgorandᚋin
 
 func (ec *executionContext) marshalNAccountStatus2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStatus(ctx context.Context, sel ast.SelectionSet, v model.AccountStatus) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNAccountUpdateResponse2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountUpdateResponse(ctx context.Context, sel ast.SelectionSet, v model.AccountUpdateResponse) graphql.Marshaler {
+	return ec._AccountUpdateResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAccountUpdateResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountUpdateResponse(ctx context.Context, sel ast.SelectionSet, v *model.AccountUpdateResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._AccountUpdateResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAccountsResponse2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountsResponse(ctx context.Context, sel ast.SelectionSet, v model.AccountsResponse) graphql.Marshaler {
+	return ec._AccountsResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAccountsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountsResponse(ctx context.Context, sel ast.SelectionSet, v *model.AccountsResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._AccountsResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNAddress2string(ctx context.Context, v interface{}) (string, error) {
@@ -17327,6 +17444,20 @@ func (ec *executionContext) marshalNApplicationParams2ᚖgithubᚗcomᚋalgorand
 	return ec._ApplicationParams(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNApplicationResponse2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationResponse(ctx context.Context, sel ast.SelectionSet, v model.ApplicationResponse) graphql.Marshaler {
+	return ec._ApplicationResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNApplicationResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationResponse(ctx context.Context, sel ast.SelectionSet, v *model.ApplicationResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._ApplicationResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNApplicationStateSchema2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationStateSchema(ctx context.Context, sel ast.SelectionSet, v *model.ApplicationStateSchema) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -17335,6 +17466,20 @@ func (ec *executionContext) marshalNApplicationStateSchema2ᚖgithubᚗcomᚋalg
 		return graphql.Null
 	}
 	return ec._ApplicationStateSchema(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNApplicationsResponse2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationsResponse(ctx context.Context, sel ast.SelectionSet, v model.ApplicationsResponse) graphql.Marshaler {
+	return ec._ApplicationsResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNApplicationsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationsResponse(ctx context.Context, sel ast.SelectionSet, v *model.ApplicationsResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._ApplicationsResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNAsset2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAsset(ctx context.Context, sel ast.SelectionSet, v model.Asset) graphql.Marshaler {
@@ -17388,6 +17533,20 @@ func (ec *executionContext) marshalNAsset2ᚖgithubᚗcomᚋalgorandᚋindexer�
 	return ec._Asset(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAssetBalancesResponse2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetBalancesResponse(ctx context.Context, sel ast.SelectionSet, v model.AssetBalancesResponse) graphql.Marshaler {
+	return ec._AssetBalancesResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAssetBalancesResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetBalancesResponse(ctx context.Context, sel ast.SelectionSet, v *model.AssetBalancesResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._AssetBalancesResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAssetHolding2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetHolding(ctx context.Context, sel ast.SelectionSet, v model.AssetHolding) graphql.Marshaler {
 	return ec._AssetHolding(ctx, sel, &v)
 }
@@ -17437,6 +17596,34 @@ func (ec *executionContext) marshalNAssetParams2ᚖgithubᚗcomᚋalgorandᚋind
 		return graphql.Null
 	}
 	return ec._AssetParams(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAssetResponse2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetResponse(ctx context.Context, sel ast.SelectionSet, v model.AssetResponse) graphql.Marshaler {
+	return ec._AssetResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAssetResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetResponse(ctx context.Context, sel ast.SelectionSet, v *model.AssetResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._AssetResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNBlock2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐBlock(ctx context.Context, sel ast.SelectionSet, v model.Block) graphql.Marshaler {
+	return ec._Block(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNBlock2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐBlock(ctx context.Context, sel ast.SelectionSet, v *model.Block) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Block(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
@@ -17564,6 +17751,20 @@ func (ec *executionContext) marshalNEvalDeltaKeyValue2ᚕgithubᚗcomᚋalgorand
 	}
 	wg.Wait()
 	return ret
+}
+
+func (ec *executionContext) marshalNHealthCheck2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐHealthCheck(ctx context.Context, sel ast.SelectionSet, v model.HealthCheck) graphql.Marshaler {
+	return ec._HealthCheck(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNHealthCheck2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐHealthCheck(ctx context.Context, sel ast.SelectionSet, v *model.HealthCheck) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._HealthCheck(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNMiniAssetHolding2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐMiniAssetHolding(ctx context.Context, sel ast.SelectionSet, v model.MiniAssetHolding) graphql.Marshaler {
@@ -17764,6 +17965,20 @@ func (ec *executionContext) marshalNTransaction2ᚖgithubᚗcomᚋalgorandᚋind
 	return ec._Transaction(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNTransactionResponse2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionResponse(ctx context.Context, sel ast.SelectionSet, v model.TransactionResponse) graphql.Marshaler {
+	return ec._TransactionResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTransactionResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionResponse(ctx context.Context, sel ast.SelectionSet, v *model.TransactionResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._TransactionResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNTransactionSignature2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionSignature(ctx context.Context, sel ast.SelectionSet, v *model.TransactionSignature) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -17776,6 +17991,20 @@ func (ec *executionContext) marshalNTransactionSignature2ᚖgithubᚗcomᚋalgor
 
 func (ec *executionContext) marshalNTransactionSignatureMultisigSubsignature2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionSignatureMultisigSubsignature(ctx context.Context, sel ast.SelectionSet, v model.TransactionSignatureMultisigSubsignature) graphql.Marshaler {
 	return ec._TransactionSignatureMultisigSubsignature(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTransactionsResponse2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionsResponse(ctx context.Context, sel ast.SelectionSet, v model.TransactionsResponse) graphql.Marshaler {
+	return ec._TransactionsResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionsResponse(ctx context.Context, sel ast.SelectionSet, v *model.TransactionsResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._TransactionsResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNTxType2githubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTxType(ctx context.Context, v interface{}) (model.TxType, error) {
@@ -18076,13 +18305,6 @@ func (ec *executionContext) marshalOAccountParticipation2ᚖgithubᚗcomᚋalgor
 	return ec._AccountParticipation(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOAccountResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountResponse(ctx context.Context, sel ast.SelectionSet, v *model.AccountResponse) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._AccountResponse(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalOAccountStateDelta2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountStateDeltaᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AccountStateDelta) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -18121,20 +18343,6 @@ func (ec *executionContext) marshalOAccountStateDelta2ᚕgithubᚗcomᚋalgorand
 	}
 	wg.Wait()
 	return ret
-}
-
-func (ec *executionContext) marshalOAccountUpdateResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountUpdateResponse(ctx context.Context, sel ast.SelectionSet, v *model.AccountUpdateResponse) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._AccountUpdateResponse(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOAccountsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccountsResponse(ctx context.Context, sel ast.SelectionSet, v *model.AccountsResponse) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._AccountsResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOAddress2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
@@ -18182,32 +18390,11 @@ func (ec *executionContext) marshalOApplicationLocalState2ᚖgithubᚗcomᚋalgo
 	return ec._ApplicationLocalState(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOApplicationResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationResponse(ctx context.Context, sel ast.SelectionSet, v *model.ApplicationResponse) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._ApplicationResponse(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOApplicationsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐApplicationsResponse(ctx context.Context, sel ast.SelectionSet, v *model.ApplicationsResponse) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._ApplicationsResponse(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalOAsset2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAsset(ctx context.Context, sel ast.SelectionSet, v *model.Asset) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Asset(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOAssetBalancesResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetBalancesResponse(ctx context.Context, sel ast.SelectionSet, v *model.AssetBalancesResponse) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._AssetBalancesResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAssetHolding2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetHolding(ctx context.Context, sel ast.SelectionSet, v *model.AssetHolding) graphql.Marshaler {
@@ -18222,13 +18409,6 @@ func (ec *executionContext) marshalOAssetParams2ᚖgithubᚗcomᚋalgorandᚋind
 		return graphql.Null
 	}
 	return ec._AssetParams(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOAssetResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetResponse(ctx context.Context, sel ast.SelectionSet, v *model.AssetResponse) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._AssetResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAssetsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAssetsResponse(ctx context.Context, sel ast.SelectionSet, v *model.AssetsResponse) graphql.Marshaler {
@@ -18343,13 +18523,6 @@ func (ec *executionContext) marshalOEvalDeltaKeyValue2ᚕgithubᚗcomᚋalgorand
 	}
 	wg.Wait()
 	return ret
-}
-
-func (ec *executionContext) marshalOHealthCheck2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐHealthCheck(ctx context.Context, sel ast.SelectionSet, v *model.HealthCheck) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._HealthCheck(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
@@ -18511,13 +18684,6 @@ func (ec *executionContext) marshalOTransactionPayment2ᚖgithubᚗcomᚋalgoran
 	return ec._TransactionPayment(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOTransactionResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionResponse(ctx context.Context, sel ast.SelectionSet, v *model.TransactionResponse) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._TransactionResponse(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalOTransactionSignatureLogicsig2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionSignatureLogicsig(ctx context.Context, sel ast.SelectionSet, v *model.TransactionSignatureLogicsig) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -18570,13 +18736,6 @@ func (ec *executionContext) marshalOTransactionSignatureMultisigSubsignature2ᚕ
 	}
 	wg.Wait()
 	return ret
-}
-
-func (ec *executionContext) marshalOTransactionsResponse2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTransactionsResponse(ctx context.Context, sel ast.SelectionSet, v *model.TransactionsResponse) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._TransactionsResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOTxType2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐTxType(ctx context.Context, v interface{}) (*model.TxType, error) {

@@ -33,14 +33,14 @@ type Query {
   block(
     """Round number"""
     roundNumber: Uint64!
-  ): Block
+  ): Block!
 
   """
   Returns 200 if healthy.
   
   Equivalent to GET /health
   """
-  healthCheck: HealthCheck
+  healthCheck: HealthCheck!
 
   """
   Lookup account information.
@@ -58,7 +58,7 @@ type Query {
 
     """Include results for the specified round."""
     round: Uint64
-  ): AccountResponse
+  ): AccountResponse!
 
   """
   Lookup account transactions.
@@ -126,7 +126,7 @@ type Query {
 
     """Lookup the specific transaction by ID."""
     id: String
-  ): TransactionsResponse
+  ): TransactionsResponse!
 
   """
   Search for accounts.
@@ -170,7 +170,7 @@ type Query {
     Include results for the specified round. For performance reasons, this parameter may be disabled on some configurations.
     """
     round: Uint64
-  ): AccountsResponse
+  ): AccountsResponse!
 
   """
   Lookup application.
@@ -184,7 +184,7 @@ type Query {
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
     """
     includeAll: Boolean
-  ): ApplicationResponse
+  ): ApplicationResponse!
 
   """
   Search for applications
@@ -207,7 +207,7 @@ type Query {
     The next page of results. Use the next token provided by the previous results.
     """
     next: String
-  ): ApplicationsResponse
+  ): ApplicationsResponse!
 
   """
   Lookup asset information.
@@ -221,7 +221,7 @@ type Query {
     Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
     """
     includeAll: Boolean
-  ): AssetResponse
+  ): AssetResponse!
 
   """
   Lookup the list of accounts who hold this asset 
@@ -256,7 +256,7 @@ type Query {
 
     """Include results for the specified round."""
     round: Uint64
-  ): AssetBalancesResponse
+  ): AssetBalancesResponse!
 
   """
   Lookup transactions for an asset.
@@ -334,7 +334,7 @@ type Query {
 
     """Lookup the specific transaction by ID."""
     id: String
-  ): TransactionsResponse
+  ): TransactionsResponse!
 
   """
   Search for assets.
@@ -373,7 +373,7 @@ type Query {
   
   Equivalent to GET /v2/transactions/{txid}
   """
-  transaction(id: String!): TransactionResponse
+  transaction(id: String!): TransactionResponse!
 
   """
   Search for transactions.
@@ -456,7 +456,7 @@ type Query {
 
     """Lookup the specific transaction by ID."""
     id: String
-  ): TransactionsResponse
+  ): TransactionsResponse!
 }
 
 type Subscription {
@@ -468,7 +468,7 @@ type Subscription {
   """
   This subscription will trigger when a new block contains transactions which reference the given account.
   """
-  accountUpdate(address: Address!): AccountUpdateResponse
+  accountUpdate(address: Address!): AccountUpdateResponse!
 }
 
 type AccountUpdateResponse {
