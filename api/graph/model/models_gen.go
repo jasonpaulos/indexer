@@ -107,6 +107,11 @@ type AccountStateDelta struct {
 	Delta []EvalDeltaKeyValue `json:"delta"`
 }
 
+type AccountUpdateResponse struct {
+	// The transactions that caused the update.
+	Transactions []Transaction `json:"transactions"`
+}
+
 type AccountsResponse struct {
 	Accounts []Account `json:"accounts"`
 	// Round at which the results were computed.

@@ -472,9 +472,6 @@ type Subscription {
 }
 
 type AccountUpdateResponse {
-  """The account that was updated."""
-  account: Account!
-
   """The transactions that caused the update."""
   transactions: [Transaction!]!
 }

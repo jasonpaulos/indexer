@@ -38,7 +38,6 @@ type Config struct {
 
 type ResolverRoot interface {
 	Account() AccountResolver
-	AccountUpdateResponse() AccountUpdateResponseResolver
 	ApplicationLocalState() ApplicationLocalStateResolver
 	ApplicationParams() ApplicationParamsResolver
 	AssetHolding() AssetHoldingResolver
@@ -99,7 +98,6 @@ type ComplexityRoot struct {
 	}
 
 	AccountUpdateResponse struct {
-		Account      func(childComplexity int) int
 		Transactions func(childComplexity int) int
 	}
 
@@ -446,9 +444,6 @@ type AccountResolver interface {
 
 	CreatedAsset(ctx context.Context, obj *model.Account, id uint64) (*model.Asset, error)
 }
-type AccountUpdateResponseResolver interface {
-	Account(ctx context.Context, obj *model.AccountUpdateResponse) (*model.Account, error)
-}
 type ApplicationLocalStateResolver interface {
 	Application(ctx context.Context, obj *model.ApplicationLocalState) (*model.Application, error)
 }
@@ -764,13 +759,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.AccountStateDelta.Delta(childComplexity), true
-
-	case "AccountUpdateResponse.account":
-		if e.complexity.AccountUpdateResponse.Account == nil {
-			break
-		}
-
-		return e.complexity.AccountUpdateResponse.Account(childComplexity), true
 
 	case "AccountUpdateResponse.transactions":
 		if e.complexity.AccountUpdateResponse.Transactions == nil {
@@ -2883,9 +2871,6 @@ type Subscription {
 }
 
 type AccountUpdateResponse {
-  """The account that was updated."""
-  account: Account!
-
   """The transactions that caused the update."""
   transactions: [Transaction!]!
 }
@@ -6244,41 +6229,6 @@ func (ec *executionContext) _AccountStateDelta_delta(ctx context.Context, field 
 	res := resTmp.([]model.EvalDeltaKeyValue)
 	fc.Result = res
 	return ec.marshalNEvalDeltaKeyValue2ᚕgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐEvalDeltaKeyValueᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _AccountUpdateResponse_account(ctx context.Context, field graphql.CollectedField, obj *model.AccountUpdateResponse) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "AccountUpdateResponse",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AccountUpdateResponse().Account(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Account)
-	fc.Result = res
-	return ec.marshalNAccount2ᚖgithubᚗcomᚋalgorandᚋindexerᚋapiᚋgraphᚋmodelᚐAccount(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AccountUpdateResponse_transactions(ctx context.Context, field graphql.CollectedField, obj *model.AccountUpdateResponse) (ret graphql.Marshaler) {
@@ -15076,24 +15026,10 @@ func (ec *executionContext) _AccountUpdateResponse(ctx context.Context, sel ast.
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("AccountUpdateResponse")
-		case "account":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AccountUpdateResponse_account(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
 		case "transactions":
 			out.Values[i] = ec._AccountUpdateResponse_transactions(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
